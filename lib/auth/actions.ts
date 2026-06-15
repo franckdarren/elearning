@@ -10,6 +10,7 @@ import {
   updatePasswordSchema,
 } from "@/lib/validations/auth";
 import { logActivity } from "@/lib/activity";
+import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 
 export type ActionState = { error?: string; success?: string } | null;
 
@@ -27,6 +28,19 @@ export async function signIn(
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
+  }
+
+  const ip = await ipFromHeaders();
+  const limit = rateLimit(`signin:${ip}:${parsed.data.email}`, {
+    windowMs: 60_000,
+    max: 5,
+  });
+  if (!limit.ok) {
+    return {
+      error: `Trop de tentatives. Réessayez dans ${Math.ceil(
+        limit.retryInMs / 1000,
+      )} s.`,
+    };
   }
 
   const supabase = await createClient();
@@ -69,6 +83,19 @@ export async function requestPasswordReset(
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Email invalide" };
+  }
+
+  const ip = await ipFromHeaders();
+  const limit = rateLimit(`reset:${ip}:${parsed.data.email}`, {
+    windowMs: 60_000,
+    max: 3,
+  });
+  if (!limit.ok) {
+    return {
+      error: `Trop de tentatives. Réessayez dans ${Math.ceil(
+        limit.retryInMs / 1000,
+      )} s.`,
+    };
   }
 
   const supabase = await createClient();

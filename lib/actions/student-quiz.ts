@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/permissions";
 import { studentPlayableQuiz } from "@/lib/auth/student-access";
+import { scoreQuiz, type ScoringQuestion } from "@/lib/quiz-scoring";
 
 export type QuestionForPlay = {
   id: string;
@@ -170,58 +171,27 @@ export async function submitQuizAttempt(
     .innerJoin(questions, eq(questions.id, questionOptions.questionId))
     .where(eq(questions.quizId, quizId));
 
-  const optionsByQuestion = new Map<
-    string,
-    { correct: Set<string>; all: Set<string> }
-  >();
+  const optionsByQuestion = new Map<string, ScoringQuestion["options"]>();
   for (const o of optRows) {
     if (!optionsByQuestion.has(o.questionId)) {
-      optionsByQuestion.set(o.questionId, {
-        correct: new Set(),
-        all: new Set(),
-      });
+      optionsByQuestion.set(o.questionId, []);
     }
-    const bucket = optionsByQuestion.get(o.questionId)!;
-    bucket.all.add(o.id);
-    if (o.isCorrect) bucket.correct.add(o.id);
-  }
-
-  const answersByQ = new Map<string, string[]>();
-  for (const a of answers) {
-    answersByQ.set(a.questionId, a.selectedOptionIds);
-  }
-
-  let score = 0;
-  let maxScore = 0;
-  const corrected: CorrectedQuestion[] = [];
-
-  for (const q of qRows) {
-    const points = Number(q.points ?? 1);
-    maxScore += points;
-    const opts = optionsByQuestion.get(q.id);
-    if (!opts) continue;
-
-    const raw = answersByQ.get(q.id) ?? [];
-    // Keep only valid option IDs for this question.
-    const selected = Array.from(new Set(raw.filter((id) => opts.all.has(id))));
-
-    const correctIds = Array.from(opts.correct);
-    const allCorrectPicked = correctIds.every((id) => selected.includes(id));
-    const noIncorrectPicked = selected.every((id) => opts.correct.has(id));
-    const exactMatch =
-      allCorrectPicked && noIncorrectPicked && selected.length > 0;
-
-    const awarded = exactMatch ? points : 0;
-    score += awarded;
-
-    corrected.push({
-      questionId: q.id,
-      awardedPoints: awarded,
-      maxPoints: points,
-      correctOptionIds: correctIds,
-      selectedOptionIds: selected,
+    optionsByQuestion.get(o.questionId)!.push({
+      id: o.id,
+      isCorrect: o.isCorrect,
     });
   }
+
+  const scoringQuestions: ScoringQuestion[] = qRows.map((q) => ({
+    id: q.id,
+    points: Number(q.points ?? 1),
+    options: optionsByQuestion.get(q.id) ?? [],
+  }));
+
+  const { score, maxScore, questions: corrected } = scoreQuiz(
+    scoringQuestions,
+    answers,
+  );
 
   const [{ id: attemptId }] = await db
     .insert(quizAttempts)

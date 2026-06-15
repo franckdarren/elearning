@@ -104,6 +104,104 @@ async function main() {
   });
 
   // -----------------------------------------------------------------------
+  // Negative cases — these MUST fail or return 0 rows under RLS.
+  // -----------------------------------------------------------------------
+
+  // Student cannot read question_options (RLS strips the table entirely for them).
+  const { data: optsAsStudent } = await student
+    .from("question_options")
+    .select("id, is_correct")
+    .limit(1);
+  checks.push({
+    name: "student cannot read question_options (no is_correct leak)",
+    pass: (optsAsStudent ?? []).length === 0,
+    detail: fmt("rows", (optsAsStudent ?? []).length),
+  });
+
+  // Student cannot insert a profile (no insert policy).
+  const { error: insertProfileErr } = await student
+    .from("profiles")
+    .insert({
+      id: "00000000-0000-0000-0000-000000000000",
+      role: "admin",
+      first_name: "X",
+      last_name: "Y",
+      email: "x@y.z",
+    });
+  checks.push({
+    name: "student cannot insert into profiles (privilege escalation blocked)",
+    pass: !!insertProfileErr,
+    detail: insertProfileErr ? insertProfileErr.code ?? "blocked" : "INSERT SUCCEEDED",
+  });
+
+  // Student cannot create a chapter (no write policy for students).
+  const { data: anyClass } = await admin
+    .from("classes")
+    .select("id")
+    .limit(1)
+    .single();
+  const { data: anySubject } = await admin
+    .from("subjects")
+    .select("id")
+    .limit(1)
+    .single();
+  if (anyClass && anySubject) {
+    const { error: chapErr } = await student.from("chapters").insert({
+      class_id: anyClass.id,
+      subject_id: anySubject.id,
+      title: "Tentative",
+    });
+    checks.push({
+      name: "student cannot create chapters",
+      pass: !!chapErr,
+      detail: chapErr ? chapErr.code ?? "blocked" : "INSERT SUCCEEDED",
+    });
+  }
+
+  // Teacher cannot insert a chapter outside their assignment.
+  const { data: otherClass } = await admin
+    .from("classes")
+    .select("id, name")
+    .neq("name", "3ème A")
+    .limit(1)
+    .single();
+  if (otherClass && anySubject) {
+    const { error: outOfScopeErr } = await teacher.from("chapters").insert({
+      class_id: otherClass.id,
+      subject_id: anySubject.id,
+      title: "Hors périmètre",
+    });
+    checks.push({
+      name: "teacher cannot write chapters outside their (class, subject) scope",
+      pass: !!outOfScopeErr,
+      detail: outOfScopeErr ? outOfScopeErr.code ?? "blocked" : "INSERT SUCCEEDED",
+    });
+  }
+
+  // Student cannot read another student's attempts.
+  const { data: othersAttempts } = await student
+    .from("quiz_attempts")
+    .select("student_id")
+    .neq("student_id", "00000000-0000-0000-0000-000000000000");
+  const ownIds = new Set((othersAttempts ?? []).map((r: any) => r.student_id));
+  checks.push({
+    name: "student only sees their own quiz_attempts",
+    pass: ownIds.size <= 1,
+    detail: `distinct=${ownIds.size}`,
+  });
+
+  // Anon client cannot read videos bucket directly (private).
+  const anon = createClient(URL, ANON);
+  const { data: storageList, error: storageErr } = await anon.storage
+    .from("videos")
+    .list("");
+  checks.push({
+    name: "anon cannot list private 'videos' bucket",
+    pass: !!storageErr || (storageList ?? []).length === 0,
+    detail: storageErr ? storageErr.message : "empty list (OK)",
+  });
+
+  // -----------------------------------------------------------------------
   // Report
   // -----------------------------------------------------------------------
   let failed = 0;

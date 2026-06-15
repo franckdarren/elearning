@@ -12,7 +12,9 @@
     "db:apply": "tsx scripts/apply-migrations.ts",
     "db:inspect": "tsx scripts/inspect-db.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "db:test-rls": "tsx scripts/test-rls.ts"
+    "db:test-rls": "tsx scripts/test-rls.ts",
+    "audit:security": "tsx scripts/audit-security.ts",
+    "test:unit": "tsx scripts/test-unit.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
