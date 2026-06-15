@@ -21,6 +21,7 @@ Toutes les spécifications du projet sont dans le dossier [`/docs`](./docs/) :
 | [03-FEATURES.md](./docs/03-FEATURES.md) | Fonctionnalités détaillées par rôle |
 | [04-UI-UX.md](./docs/04-UI-UX.md) | Routes, parcours utilisateur, dashboards |
 | [05-PROMPT-CLAUDE-CODE.md](./docs/05-PROMPT-CLAUDE-CODE.md) | Prompt maître pour développer avec Claude Code |
+| [06-ROADMAP.md](./docs/06-ROADMAP.md) | Roadmap d'implémentation détaillée (8 phases, 40–55 j-d) |
 
 Voir aussi [CLAUDE.md](./CLAUDE.md) — règles de code lues automatiquement par Claude Code à chaque session.
 

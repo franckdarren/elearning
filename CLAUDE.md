@@ -17,6 +17,7 @@ Les spécifications complètes sont dans `/docs` :
 - `03-FEATURES.md` — Fonctionnalités par rôle
 - `04-UI-UX.md` — Routes, parcours, dashboards
 - `05-PROMPT-CLAUDE-CODE.md` — Prompt maître étape par étape
+- `06-ROADMAP.md` — Roadmap détaillée par phase (tâches, livrables, critères de validation)
 
 ---
 
