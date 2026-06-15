@@ -37,6 +37,7 @@ export async function createTeacherAssignment(
     .onConflictDoNothing();
 
   revalidatePath("/admin/assignments");
+  revalidatePath("/manager/assignments");
   return { success: "Affectation créée" };
 }
 
@@ -46,6 +47,7 @@ export async function deleteTeacherAssignment(formData: FormData) {
   if (!id) return;
   await db.delete(teacherAssignments).where(eq(teacherAssignments.id, id));
   revalidatePath("/admin/assignments");
+  revalidatePath("/manager/assignments");
 }
 
 /**
@@ -98,5 +100,6 @@ export async function setStudentScope(
   });
 
   revalidatePath("/admin/assignments");
+  revalidatePath("/manager/assignments");
   return { success: "Périmètre élève mis à jour" };
 }

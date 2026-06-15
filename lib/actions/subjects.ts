@@ -35,6 +35,7 @@ export async function upsertSubject(
   }
 
   revalidatePath("/admin/subjects");
+  revalidatePath("/manager/subjects");
   return { success: id ? "Matière mise à jour" : "Matière créée" };
 }
 
@@ -44,4 +45,5 @@ export async function deleteSubject(formData: FormData) {
   if (!id) return;
   await db.delete(subjects).where(eq(subjects.id, id));
   revalidatePath("/admin/subjects");
+  revalidatePath("/manager/subjects");
 }

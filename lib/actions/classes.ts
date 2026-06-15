@@ -87,6 +87,7 @@ export async function upsertClass(
   });
 
   revalidatePath("/admin/classes");
+  revalidatePath("/manager/classes");
   return { success: id ? "Classe mise à jour" : "Classe créée" };
 }
 
@@ -96,4 +97,5 @@ export async function deleteClass(formData: FormData) {
   if (!id) return;
   await db.delete(classes).where(eq(classes.id, id));
   revalidatePath("/admin/classes");
+  revalidatePath("/manager/classes");
 }
