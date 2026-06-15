@@ -10,40 +10,18 @@ import {
 } from "@/lib/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { SequenceDialog } from "./sequence-dialog";
 import { VideoUploadDialog } from "./video-upload-dialog";
 import { DocumentUploadDialog } from "./document-upload-dialog";
-import { StatusDialog } from "./status-dialog";
-import { ResourcePreviewDialog } from "./resource-preview-dialog";
+import { ResourceRow } from "./resource-row";
 import { requireRole } from "@/lib/auth/permissions";
 import { assertWriteScope } from "@/lib/auth/scope";
 import { deleteSequence } from "@/lib/actions/sequences";
-import { deleteResource, moveResource } from "@/lib/actions/resources";
 
 export const metadata = { title: "Enseignant · Chapitre" };
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL = {
-  draft: "Brouillon",
-  scheduled: "Programmé",
-  published: "Publié",
-  archived: "Archivé",
-} as const;
-
-function StatusBadge({ status }: { status: keyof typeof STATUS_LABEL }) {
-  const variant =
-    status === "published"
-      ? "default"
-      : status === "scheduled"
-        ? "secondary"
-        : status === "archived"
-          ? "outline"
-          : "outline";
-  return <Badge variant={variant}>{STATUS_LABEL[status]}</Badge>;
-}
 
 type Resource = {
   id: string;
@@ -55,60 +33,6 @@ type Resource = {
   unpublishAt: Date | null;
   position: number;
 };
-
-function ResourceRow({ r }: { r: Resource }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-2 text-sm">
-      <Badge variant="outline" className="w-24 justify-center text-xs">
-        {r.type === "video" ? "Vidéo" : "Document"}
-      </Badge>
-      <span className="flex-1">{r.title}</span>
-      <StatusBadge status={r.status} />
-      <div className="flex gap-1">
-        <form action={moveResource}>
-          <input type="hidden" name="id" value={r.id} />
-          <input type="hidden" name="direction" value="up" />
-          <Button type="submit" variant="ghost" size="sm">
-            ↑
-          </Button>
-        </form>
-        <form action={moveResource}>
-          <input type="hidden" name="id" value={r.id} />
-          <input type="hidden" name="direction" value="down" />
-          <Button type="submit" variant="ghost" size="sm">
-            ↓
-          </Button>
-        </form>
-        <ResourcePreviewDialog resourceId={r.id} />
-        <StatusDialog
-          resource={{
-            id: r.id,
-            title: r.title,
-            status: r.status,
-            publishedAt: r.publishedAt,
-            unpublishAt: r.unpublishAt,
-          }}
-        />
-        <ConfirmDialog
-          trigger={
-            <Button variant="ghost" size="sm" className="text-red-600">
-              Supprimer
-            </Button>
-          }
-          title={`Supprimer ${r.title} ?`}
-          description="Le fichier sera supprimé du stockage et la ressource retirée du chapitre."
-          confirmLabel="Supprimer"
-          destructive
-          action={async (formData: FormData) => {
-            "use server";
-            formData.set("id", r.id);
-            await deleteResource(formData);
-          }}
-        />
-      </div>
-    </div>
-  );
-}
 
 export default async function ChapterDetailPage({
   params,
