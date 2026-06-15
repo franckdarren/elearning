@@ -106,10 +106,22 @@ export async function createVideoResource(
   const data = parsed.data;
   const c = await chapterScope(data.chapterId);
   if (!c) return { error: "Chapitre introuvable" };
-  await assertWriteScope(user, c.classId, c.subjectId);
+
+  try {
+    await assertWriteScope(user, c.classId, c.subjectId);
+  } catch {
+    return { error: "Accès refusé à ce chapitre" };
+  }
 
   const videoPath = buildPath("videos", data.chapterId, file.name);
-  await videoProvider.upload(file, videoPath);
+
+  try {
+    await videoProvider.upload(file, videoPath);
+  } catch (e) {
+    return {
+      error: `Échec du stockage vidéo : ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
 
   let thumbnailPath: string | null = null;
   if (thumb instanceof File && thumb.size > 0) {
@@ -118,29 +130,35 @@ export async function createVideoResource(
     const { error } = await supabase.storage
       .from(THUMB_BUCKET)
       .upload(thumbnailPath, thumb, { contentType: thumb.type, upsert: false });
-    if (error) return { error: `Miniature: ${error.message}` };
+    if (error) return { error: `Miniature : ${error.message}` };
   }
 
   const publishedAt = nullableTimestamp(data.publishedAt);
   const unpublishAt = nullableTimestamp(data.unpublishAt);
   const status = autoStatus(data.status, publishedAt);
 
-  await db.insert(resources).values({
-    chapterId: data.chapterId,
-    sequenceId: data.sequenceId ?? null,
-    type: "video",
-    title: data.title,
-    description: data.description ?? null,
-    videoPath,
-    thumbnailPath,
-    durationSeconds: data.durationSeconds ?? null,
-    author: data.author ?? null,
-    status,
-    publishedAt,
-    unpublishAt,
-    position: await nextPosition(data.chapterId),
-    createdBy: user.id,
-  });
+  try {
+    await db.insert(resources).values({
+      chapterId: data.chapterId,
+      sequenceId: data.sequenceId ?? null,
+      type: "video",
+      title: data.title,
+      description: data.description ?? null,
+      videoPath,
+      thumbnailPath,
+      durationSeconds: data.durationSeconds ?? null,
+      author: data.author ?? null,
+      status,
+      publishedAt,
+      unpublishAt,
+      position: await nextPosition(data.chapterId),
+      createdBy: user.id,
+    });
+  } catch (e) {
+    return {
+      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
 
   revalidatePath(`/teacher/content/${data.chapterId}`);
   return { success: "Vidéo enregistrée" };
@@ -180,29 +198,47 @@ export async function createDocumentResource(
   const data = parsed.data;
   const c = await chapterScope(data.chapterId);
   if (!c) return { error: "Chapitre introuvable" };
-  await assertWriteScope(user, c.classId, c.subjectId);
+
+  try {
+    await assertWriteScope(user, c.classId, c.subjectId);
+  } catch {
+    return { error: "Accès refusé à ce chapitre" };
+  }
 
   const documentPath = buildPath("documents", data.chapterId, file.name);
-  await documentProvider.upload(file, documentPath);
+
+  try {
+    await documentProvider.upload(file, documentPath);
+  } catch (e) {
+    return {
+      error: `Échec du stockage document : ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
 
   const publishedAt = nullableTimestamp(data.publishedAt);
   const unpublishAt = nullableTimestamp(data.unpublishAt);
   const status = autoStatus(data.status, publishedAt);
 
-  await db.insert(resources).values({
-    chapterId: data.chapterId,
-    sequenceId: data.sequenceId ?? null,
-    type: "document",
-    title: data.title,
-    description: data.description ?? null,
-    documentPath,
-    documentAccess: data.documentAccess,
-    status,
-    publishedAt,
-    unpublishAt,
-    position: await nextPosition(data.chapterId),
-    createdBy: user.id,
-  });
+  try {
+    await db.insert(resources).values({
+      chapterId: data.chapterId,
+      sequenceId: data.sequenceId ?? null,
+      type: "document",
+      title: data.title,
+      description: data.description ?? null,
+      documentPath,
+      documentAccess: data.documentAccess,
+      status,
+      publishedAt,
+      unpublishAt,
+      position: await nextPosition(data.chapterId),
+      createdBy: user.id,
+    });
+  } catch (e) {
+    return {
+      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
 
   revalidatePath(`/teacher/content/${data.chapterId}`);
   return { success: "Document enregistré" };
