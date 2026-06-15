@@ -49,6 +49,10 @@ export async function signIn(
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
+  console.log("[signIn] auth result", {
+    hasUser: !!data?.user,
+    error: error?.message,
+  });
   if (error || !data.user) {
     return { error: "Email ou mot de passe incorrect" };
   }
@@ -59,14 +63,22 @@ export async function signIn(
     .eq("id", data.user.id)
     .single();
 
+  console.log("[signIn] profile", { found: !!profile, role: profile?.role });
   if (!profile || !profile.is_active) {
     await supabase.auth.signOut();
     return { error: "Compte désactivé" };
   }
 
+  // Inspect what cookies the action will commit.
+  const { cookies } = await import("next/headers");
+  const store = await cookies();
+  const sbCookies = store
+    .getAll()
+    .filter((c) => c.name.startsWith("sb-"))
+    .map((c) => c.name);
+  console.log("[signIn] sb cookies in store:", sbCookies);
+
   await logActivity({ userId: data.user.id, action: "auth.signin" });
-  // Return rather than redirect() to ensure Supabase session cookies are
-  // committed in the 200 response before the browser navigates.
   return { redirectTo: dashboardPath(profile.role as UserRole) };
 }
 

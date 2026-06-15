@@ -20,24 +20,29 @@ const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const supabase = await createClient();
+  // The middleware validates the token on every request via getUser().
+  // Server components read the already-validated session from the cookie
+  // to avoid a redundant round-trip to the Supabase Auth server.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) return null;
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, role, full_name, is_active")
-    .eq("id", user.id)
+    .select("id, email, role, first_name, last_name, is_active")
+    .eq("id", session.user.id)
     .single();
 
   if (!profile || !profile.is_active) return null;
+
+  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null;
 
   return {
     id: profile.id,
     email: profile.email,
     role: profile.role as UserRole,
-    fullName: profile.full_name,
+    fullName,
     isActive: profile.is_active,
   };
 }

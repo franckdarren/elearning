@@ -28,6 +28,11 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/")) return NextResponse.next();
 
   const { response, supabase, user } = await updateSession(request);
+  const incomingSb = request.cookies
+    .getAll()
+    .filter((c) => c.name.startsWith("sb-"))
+    .map((c) => c.name);
+  console.log("[mw]", pathname, "user:", user?.id ?? "null", "cookies:", incomingSb);
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const group = PROTECTED_GROUPS.find((g) => pathname.startsWith(g.prefix));
