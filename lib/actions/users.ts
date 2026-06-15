@@ -10,6 +10,7 @@ import {
   inviteUserSchema,
   updateUserSchema,
 } from "@/lib/validations/user";
+import { logActivity } from "@/lib/activity";
 
 export type ActionState = { error?: string; success?: string } | null;
 
@@ -25,7 +26,7 @@ export async function createUser(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireRole("admin");
+  const admin = await requireRole("admin");
 
   const parsed = inviteUserSchema.safeParse({
     email: formData.get("email"),
@@ -63,6 +64,11 @@ export async function createUser(
     })
     .where(eq(profiles.id, data.user.id));
 
+  await logActivity({
+    userId: admin.id,
+    action: "user.create",
+    metadata: { email: parsed.data.email, role: parsed.data.role },
+  });
   revalidatePath("/admin/users");
   return { success: "Utilisateur créé" };
 }

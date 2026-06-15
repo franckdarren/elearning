@@ -11,6 +11,7 @@ export function DashboardShell({
   return (
     <>
       <AppHeader
+        userId={user.id}
         fullName={user.fullName}
         email={user.email}
         role={user.role}

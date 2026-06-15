@@ -9,6 +9,7 @@ import {
   requestResetSchema,
   updatePasswordSchema,
 } from "@/lib/validations/auth";
+import { logActivity } from "@/lib/activity";
 
 export type ActionState = { error?: string; success?: string } | null;
 
@@ -45,11 +46,16 @@ export async function signIn(
     return { error: "Compte désactivé" };
   }
 
+  await logActivity({ userId: data.user.id, action: "auth.signin" });
   redirect(dashboardPath(profile.role as UserRole));
 }
 
 export async function signOut() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await logActivity({ userId: user.id, action: "auth.signout" });
   await supabase.auth.signOut();
   redirect("/login");
 }

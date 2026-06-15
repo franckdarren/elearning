@@ -359,7 +359,8 @@ Vivacité de la plateforme : temps réel, publications automatiques, traçabilit
 - [ ] Toutes les 5 min (`vercel.json`) :
   1. `UPDATE resources SET status='published' WHERE status='scheduled' AND published_at <= now()`.
   2. `UPDATE resources SET status='archived' WHERE unpublish_at <= now()`.
-  3. `UPDATE quizzes SET status='archived' WHERE closes_at <= now()`.
+  3. `UPDATE quizzes SET status='archived' W
+  HERE closes_at <= now()`.
   4. Insert notifications correspondantes.
 - [ ] Logs en cas d'erreur.
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoutButton } from "./logout-button";
+import { NotificationBell } from "./notification-bell";
 import type { UserRole } from "@/lib/auth/permissions";
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -10,10 +11,12 @@ const ROLE_LABEL: Record<UserRole, string> = {
 };
 
 export function AppHeader({
+  userId,
   fullName,
   email,
   role,
 }: {
+  userId: string;
   fullName: string | null;
   email: string;
   role: UserRole;
@@ -29,6 +32,7 @@ export function AppHeader({
             <div className="font-medium">{fullName || email}</div>
             <div className="text-zinc-500">{ROLE_LABEL[role]}</div>
           </div>
+          <NotificationBell userId={userId} />
           <LogoutButton />
         </div>
       </div>

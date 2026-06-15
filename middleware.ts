@@ -23,8 +23,11 @@ const DASHBOARD_BY_ROLE = {
 } as const;
 
 export async function middleware(request: NextRequest) {
-  const { response, supabase, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
+  // API routes carry their own auth (CRON_SECRET, signed bodies, etc.).
+  if (pathname.startsWith("/api/")) return NextResponse.next();
+
+  const { response, supabase, user } = await updateSession(request);
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const group = PROTECTED_GROUPS.find((g) => pathname.startsWith(g.prefix));

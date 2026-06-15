@@ -10,7 +10,12 @@ export default async function TeacherLayout({
   const user = await requireRole(["admin", "teacher"]);
   return (
     <>
-      <AppHeader fullName={user.fullName} email={user.email} role={user.role} />
+      <AppHeader
+        userId={user.id}
+        fullName={user.fullName}
+        email={user.email}
+        role={user.role}
+      />
       <div className="mx-auto flex w-full max-w-7xl flex-1 gap-6 px-6 py-8">
         <aside className="w-56 shrink-0">
           <TeacherSidebar />

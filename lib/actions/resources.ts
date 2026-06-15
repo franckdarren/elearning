@@ -6,9 +6,10 @@ import { db } from "@/lib/db";
 import { resources, chapters } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/permissions";
 import { assertWriteScope } from "@/lib/auth/scope";
-import { videoProvider, VIDEO_BUCKET } from "@/lib/storage/video-provider";
+import { videoProvider } from "@/lib/storage/video-provider";
 import { documentProvider } from "@/lib/storage/document-provider";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/activity";
 import {
   videoResourceSchema,
   documentResourceSchema,
@@ -248,6 +249,14 @@ export async function updateResourceStatus(
     .set({ status, publishedAt, unpublishAt })
     .where(eq(resources.id, parsed.data.id));
 
+  if (status === "published") {
+    await logActivity({
+      userId: user.id,
+      action: "resource.publish",
+      metadata: { id: parsed.data.id },
+    });
+  }
+
   revalidatePath(`/teacher/content/${row.chapterId}`);
   return { success: "Statut mis à jour" };
 }
@@ -291,6 +300,11 @@ export async function deleteResource(formData: FormData) {
   }
 
   await db.delete(resources).where(eq(resources.id, id));
+  await logActivity({
+    userId: user.id,
+    action: "resource.delete",
+    metadata: { id, type: row.type },
+  });
   revalidatePath(`/teacher/content/${row.chapterId}`);
 }
 
