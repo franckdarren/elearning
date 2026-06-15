@@ -17,6 +17,7 @@ import { SequenceDialog } from "./sequence-dialog";
 import { VideoUploadDialog } from "./video-upload-dialog";
 import { DocumentUploadDialog } from "./document-upload-dialog";
 import { StatusDialog } from "./status-dialog";
+import { ResourcePreviewDialog } from "./resource-preview-dialog";
 import { requireRole } from "@/lib/auth/permissions";
 import { assertWriteScope } from "@/lib/auth/scope";
 import { deleteSequence } from "@/lib/actions/sequences";
@@ -78,6 +79,7 @@ function ResourceRow({ r }: { r: Resource }) {
             ↓
           </Button>
         </form>
+        <ResourcePreviewDialog resourceId={r.id} />
         <StatusDialog
           resource={{
             id: r.id,

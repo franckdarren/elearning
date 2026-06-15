@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FolderOpen, ClipboardList, BarChart2 } from "lucide-react";
+import { LayoutDashboard, FolderOpen, ClipboardList, BarChart2, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { href: "/teacher/content", label: "Contenus", icon: FolderOpen },
   { href: "/teacher/quizzes", label: "QCM", icon: ClipboardList },
   { href: "/teacher/results", label: "Résultats", icon: BarChart2 },
+  { href: "/teacher/progress", label: "Progression", icon: TrendingUp },
 ];
 
 export function TeacherSidebar() {

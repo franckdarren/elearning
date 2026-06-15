@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import {
   quizAttempts,
@@ -167,7 +168,12 @@ export default async function TeacherResultsPage() {
                 {attempts.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell className="font-medium">
-                      {a.studentFirstName} {a.studentLastName}
+                      <Link
+                        href={`/teacher/results/${a.id}`}
+                        className="hover:underline"
+                      >
+                        {a.studentFirstName} {a.studentLastName}
+                      </Link>
                     </TableCell>
                     <TableCell>{a.quizTitle}</TableCell>
                     <TableCell className="text-zinc-500">
