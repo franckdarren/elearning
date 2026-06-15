@@ -12,7 +12,11 @@ import {
 import { logActivity } from "@/lib/activity";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 
-export type ActionState = { error?: string; success?: string } | null;
+export type ActionState = {
+  error?: string;
+  success?: string;
+  redirectTo?: string;
+} | null;
 
 function appUrl() {
   return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -61,7 +65,9 @@ export async function signIn(
   }
 
   await logActivity({ userId: data.user.id, action: "auth.signin" });
-  redirect(dashboardPath(profile.role as UserRole));
+  // Return rather than redirect() to ensure Supabase session cookies are
+  // committed in the 200 response before the browser navigates.
+  return { redirectTo: dashboardPath(profile.role as UserRole) };
 }
 
 export async function signOut() {
@@ -140,5 +146,5 @@ export async function updatePassword(
     .eq("id", user.id)
     .single();
 
-  redirect(dashboardPath((profile?.role ?? "student") as UserRole));
+  return { redirectTo: dashboardPath((profile?.role ?? "student") as UserRole) };
 }

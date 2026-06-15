@@ -1,16 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { updatePassword, type ActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function UpdatePasswordForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     updatePassword,
     null,
   );
+
+  useEffect(() => {
+    if (state?.redirectTo) router.replace(state.redirectTo);
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -45,7 +51,11 @@ export function UpdatePasswordForm() {
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={pending || !!state?.redirectTo}
+      >
         {pending ? "Enregistrement…" : "Mettre à jour"}
       </Button>
     </form>

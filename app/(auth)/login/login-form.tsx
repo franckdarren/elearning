@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn, type ActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     signIn,
     null,
   );
+
+  useEffect(() => {
+    if (state?.redirectTo) {
+      router.replace(state.redirectTo);
+    }
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -52,8 +60,12 @@ export function LoginForm() {
         </p>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Connexion…" : "Se connecter"}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={pending || !!state?.redirectTo}
+      >
+        {pending ? "Connexion…" : state?.redirectTo ? "Redirection…" : "Se connecter"}
       </Button>
     </form>
   );
