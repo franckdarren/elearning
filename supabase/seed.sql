@@ -1,0 +1,9 @@
+-- Seed data for La-Passerelle Du Savoir.
+-- Implemented in Phase 1 (see docs/06-ROADMAP.md).
+--
+-- Expected content:
+--   - 1 admin (auth.users + profiles)
+--   - 1 current academic_year
+--   - 2-3 classes, 3-4 subjects, class_subjects
+--   - 1 teacher with teacher_assignments
+--   - 1 student with enrollments + student_subject_access
