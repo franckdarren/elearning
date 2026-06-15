@@ -5,22 +5,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
+import { AppSidebar } from "@/components/shared/app-sidebar";
 import { NavBreadcrumb } from "@/components/shared/nav-breadcrumb";
 import { NotificationBell } from "@/components/shared/notification-bell";
-import {
-  LayoutDashboard,
-  FolderOpen,
-  ClipboardList,
-  BarChart2,
-} from "lucide-react";
-
-const NAV: NavItem[] = [
-  { title: "Tableau de bord", url: "/teacher/dashboard", icon: LayoutDashboard },
-  { title: "Contenus", url: "/teacher/content", icon: FolderOpen },
-  { title: "QCM", url: "/teacher/quizzes", icon: ClipboardList },
-  { title: "Résultats", url: "/teacher/results", icon: BarChart2 },
-];
 
 export default async function TeacherLayout({
   children,
@@ -31,7 +18,7 @@ export default async function TeacherLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar navItems={NAV} user={user} />
+      <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />

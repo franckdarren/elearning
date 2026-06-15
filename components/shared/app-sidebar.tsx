@@ -2,7 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type LucideIcon, ChevronsUpDown, LogOut } from "lucide-react";
+import {
+  BarChart2,
+  BookOpen,
+  Calendar,
+  ChevronsUpDown,
+  ClipboardList,
+  FolderOpen,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Trophy,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -27,10 +41,39 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from "@/lib/auth/actions";
 import type { UserRole } from "@/lib/auth/permissions";
 
-export type NavItem = {
+type NavItem = {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon: React.ElementType;
+};
+
+const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
+  admin: [
+    { title: "Tableau de bord", url: "/admin/dashboard", icon: LayoutDashboard },
+    { title: "Utilisateurs", url: "/admin/users", icon: Users },
+    { title: "Classes", url: "/admin/classes", icon: GraduationCap },
+    { title: "Matières", url: "/admin/subjects", icon: BookOpen },
+    { title: "Affectations", url: "/admin/assignments", icon: UserCheck },
+    { title: "Paramètres", url: "/admin/settings", icon: Settings },
+  ],
+  manager: [
+    { title: "Tableau de bord", url: "/manager/dashboard", icon: LayoutDashboard },
+    { title: "Classes", url: "/manager/classes", icon: GraduationCap },
+    { title: "Matières", url: "/manager/subjects", icon: BookOpen },
+    { title: "Affectations", url: "/manager/assignments", icon: UserCheck },
+    { title: "Programmation", url: "/manager/scheduling", icon: Calendar },
+  ],
+  teacher: [
+    { title: "Tableau de bord", url: "/teacher/dashboard", icon: LayoutDashboard },
+    { title: "Contenus", url: "/teacher/content", icon: FolderOpen },
+    { title: "QCM", url: "/teacher/quizzes", icon: ClipboardList },
+    { title: "Résultats", url: "/teacher/results", icon: BarChart2 },
+  ],
+  student: [
+    { title: "Tableau de bord", url: "/student/dashboard", icon: LayoutDashboard },
+    { title: "Mes matières", url: "/student/subjects", icon: BookOpen },
+    { title: "Mes résultats", url: "/student/results", icon: Trophy },
+  ],
 };
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -50,13 +93,12 @@ function getInitials(fullName: string | null, email: string): string {
 }
 
 export function AppSidebar({
-  navItems,
   user,
 }: {
-  navItems: NavItem[];
   user: { id: string; fullName: string | null; email: string; role: UserRole };
 }) {
   const pathname = usePathname();
+  const navItems = NAV_BY_ROLE[user.role] ?? [];
 
   return (
     <Sidebar collapsible="icon">

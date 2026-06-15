@@ -5,26 +5,9 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
+import { AppSidebar } from "@/components/shared/app-sidebar";
 import { NavBreadcrumb } from "@/components/shared/nav-breadcrumb";
 import { NotificationBell } from "@/components/shared/notification-bell";
-import {
-  LayoutDashboard,
-  Users,
-  GraduationCap,
-  BookOpen,
-  UserCheck,
-  Settings,
-} from "lucide-react";
-
-const NAV: NavItem[] = [
-  { title: "Tableau de bord", url: "/admin/dashboard", icon: LayoutDashboard },
-  { title: "Utilisateurs", url: "/admin/users", icon: Users },
-  { title: "Classes", url: "/admin/classes", icon: GraduationCap },
-  { title: "Matières", url: "/admin/subjects", icon: BookOpen },
-  { title: "Affectations", url: "/admin/assignments", icon: UserCheck },
-  { title: "Paramètres", url: "/admin/settings", icon: Settings },
-];
 
 export default async function AdminLayout({
   children,
@@ -35,7 +18,7 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar navItems={NAV} user={user} />
+      <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
