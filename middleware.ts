@@ -27,46 +27,51 @@ export async function middleware(request: NextRequest) {
   // API routes carry their own auth (CRON_SECRET, signed bodies, etc.).
   if (pathname.startsWith("/api/")) return NextResponse.next();
 
-  const { response, supabase, user } = await updateSession(request);
-  const incomingSb = request.cookies
-    .getAll()
-    .filter((c) => c.name.startsWith("sb-"))
-    .map((c) => c.name);
-  console.log("[mw]", pathname, "user:", user?.id ?? "null", "cookies:", incomingSb);
+  try {
+    const { response, supabase, user } = await updateSession(request);
 
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-  const group = PROTECTED_GROUPS.find((g) => pathname.startsWith(g.prefix));
+    const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+    const group = PROTECTED_GROUPS.find((g) => pathname.startsWith(g.prefix));
 
-  if (!user) {
-    if (isPublic || pathname === "/") return response;
+    if (!user) {
+      if (isPublic || pathname === "/") return response;
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(url);
+    }
+
+    if (!group) return response;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, is_active")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || !profile.is_active) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+
+    const role = profile.role as keyof typeof DASHBOARD_BY_ROLE;
+    if (!group.roles.includes(role)) {
+      const url = request.nextUrl.clone();
+      url.pathname = DASHBOARD_BY_ROLE[role];
+      return NextResponse.redirect(url);
+    }
+
+    return response;
+  } catch {
+    // En cas d'erreur (Supabase inaccessible, variables manquantes…),
+    // rediriger vers login plutôt que de crasher le middleware.
+    const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+    if (isPublic || pathname === "/") return NextResponse.next();
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(url);
   }
-
-  if (!group) return response;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, is_active")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !profile.is_active) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  const role = profile.role as keyof typeof DASHBOARD_BY_ROLE;
-  if (!group.roles.includes(role)) {
-    const url = request.nextUrl.clone();
-    url.pathname = DASHBOARD_BY_ROLE[role];
-    return NextResponse.redirect(url);
-  }
-
-  return response;
 }
 
 export const config = {

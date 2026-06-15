@@ -1,6 +1,20 @@
 import { requireRole } from "@/lib/auth/permissions";
-import { AppHeader } from "@/components/shared/app-header";
-import { StudentSidebar } from "@/components/student/student-sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
+import { NavBreadcrumb } from "@/components/shared/nav-breadcrumb";
+import { NotificationBell } from "@/components/shared/notification-bell";
+import { LayoutDashboard, BookOpen, Trophy } from "lucide-react";
+
+const NAV: NavItem[] = [
+  { title: "Tableau de bord", url: "/student/dashboard", icon: LayoutDashboard },
+  { title: "Mes matières", url: "/student/subjects", icon: BookOpen },
+  { title: "Mes résultats", url: "/student/results", icon: Trophy },
+];
 
 export default async function StudentLayout({
   children,
@@ -8,20 +22,23 @@ export default async function StudentLayout({
   children: React.ReactNode;
 }) {
   const user = await requireRole("student");
+
   return (
-    <>
-      <AppHeader
-        userId={user.id}
-        fullName={user.fullName}
-        email={user.email}
-        role={user.role}
-      />
-      <div className="mx-auto flex w-full max-w-6xl flex-1 gap-6 px-6 py-8">
-        <aside className="w-56 shrink-0">
-          <StudentSidebar />
-        </aside>
-        <div className="min-w-0 flex-1">{children}</div>
-      </div>
-    </>
+    <SidebarProvider>
+      <AppSidebar navItems={NAV} user={user} />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <NavBreadcrumb />
+          <div className="ml-auto">
+            <NotificationBell userId={user.id} />
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-6 p-6">
+          {children}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

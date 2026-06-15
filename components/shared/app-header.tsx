@@ -22,14 +22,14 @@ export function AppHeader({
   role: UserRole;
 }) {
   return (
-    <header className="border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="mx-auto flex max-w-6xl items-center justify-between">
+    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="text-sm font-semibold tracking-tight">
           La-Passerelle Du Savoir
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden text-right text-xs sm:block">
-            <div className="font-medium">{fullName || email}</div>
+            <div className="font-medium leading-tight">{fullName || email}</div>
             <div className="text-zinc-500">{ROLE_LABEL[role]}</div>
           </div>
           <NotificationBell userId={userId} />
