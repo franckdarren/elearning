@@ -164,6 +164,7 @@ CRUD complet utilisateurs / classes / matières / années / affectations + dashb
 
 **Users** (`/admin/users`)
 - [ ] Liste avec filtre par rôle, pagination, recherche.
+
 - [ ] Création = Server Action qui appelle `supabase.auth.admin.inviteUserByEmail` (service role) + insert dans `profiles`.
 - [ ] Edit (nom, rôle, is_active).
 - [ ] Soft delete (toggle `is_active`).
