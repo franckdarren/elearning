@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   getVideoSignedUploadUrl,
@@ -32,21 +32,27 @@ type Sequence = { id: string; title: string };
 const MAX_VIDEO_MB = 100;
 const MAX_THUMB_MB = 5;
 
-async function uploadToSignedUrl(
+function uploadWithProgress(
   signedUrl: string,
   file: File,
+  onProgress: (pct: number) => void,
 ): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const res = await fetch(signedUrl, {
-      method: "PUT",
-      headers: { "Content-Type": file.type || "application/octet-stream" },
-      body: file,
-    });
-    if (!res.ok) return { ok: false, error: `Erreur HTTP ${res.status}` };
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
-  }
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", signedUrl);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.timeout = 10 * 60 * 1000; // 10 min
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve({ ok: true })
+        : resolve({ ok: false, error: `Erreur HTTP ${xhr.status}` });
+    xhr.onerror = () => resolve({ ok: false, error: "Erreur réseau" });
+    xhr.ontimeout = () => resolve({ ok: false, error: "Délai dépassé (10 min)" });
+    xhr.send(file);
+  });
 }
 
 export function VideoUploadDialog({
@@ -58,16 +64,18 @@ export function VideoUploadDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "uploading" | "saving">("idle");
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   function resetState() {
     setStatus("idle");
+    setProgress(0);
     setError(null);
     formRef.current?.reset();
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
@@ -77,63 +85,75 @@ export function VideoUploadDialog({
       return;
     }
     if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
-      setError(`Fichier trop volumineux (max ${MAX_VIDEO_MB} MB).`);
+      setError(`Fichier trop volumineux (max ${MAX_VIDEO_MB} Mo).`);
       return;
     }
 
     const thumb = formData.get("thumbnail") as File | null;
     if (thumb && thumb.size > MAX_THUMB_MB * 1024 * 1024) {
-      setError(`Miniature trop volumineuse (max ${MAX_THUMB_MB} MB).`);
+      setError(`Miniature trop volumineuse (max ${MAX_THUMB_MB} Mo).`);
       return;
     }
 
     setError(null);
     setStatus("uploading");
+    setProgress(0);
 
-    // 1. Obtenir l'URL signée pour la vidéo
-    const videoUrlResult = await getVideoSignedUploadUrl(chapterId, file.name);
-    if (!videoUrlResult.ok) {
-      setError(videoUrlResult.error);
-      setStatus("idle");
-      return;
-    }
-
-    // 2. Upload direct vers Supabase Storage
-    const videoUpload = await uploadToSignedUrl(videoUrlResult.signedUrl, file);
-    if (!videoUpload.ok) {
-      setError(`Échec du téléversement vidéo : ${videoUpload.error}`);
-      setStatus("idle");
-      return;
-    }
-
-    // 3. Upload miniature si présente
-    let thumbnailPath: string | null = null;
-    if (thumb && thumb.size > 0) {
-      const thumbUrlResult = await getThumbnailSignedUploadUrl(chapterId, thumb.name);
-      if (thumbUrlResult.ok) {
-        const thumbUpload = await uploadToSignedUrl(thumbUrlResult.signedUrl, thumb);
-        if (thumbUpload.ok) thumbnailPath = thumbUrlResult.path;
+    try {
+      // 1. URL signée pour la vidéo
+      const videoUrlResult = await getVideoSignedUploadUrl(chapterId, file.name);
+      if (!videoUrlResult.ok) {
+        setError(videoUrlResult.error);
+        return;
       }
+
+      // 2. Upload direct vers Supabase Storage avec progression
+      const videoUpload = await uploadWithProgress(
+        videoUrlResult.signedUrl,
+        file,
+        setProgress,
+      );
+      if (!videoUpload.ok) {
+        setError(`Échec du téléversement : ${videoUpload.error}`);
+        return;
+      }
+
+      // 3. Upload miniature si présente
+      let thumbnailPath: string | null = null;
+      if (thumb && thumb.size > 0) {
+        const thumbUrlResult = await getThumbnailSignedUploadUrl(chapterId, thumb.name);
+        if (thumbUrlResult.ok) {
+          const thumbUpload = await uploadWithProgress(
+            thumbUrlResult.signedUrl,
+            thumb,
+            () => {},
+          );
+          if (thumbUpload.ok) thumbnailPath = thumbUrlResult.path;
+        }
+      }
+
+      // 4. Enregistrer en base
+      setStatus("saving");
+      formData.set("videoPath", videoUrlResult.path);
+      if (thumbnailPath) formData.set("thumbnailPath", thumbnailPath);
+      formData.delete("file");
+      formData.delete("thumbnail");
+
+      const result = await createVideoResourceRecord(formData);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+
+      toast.success("Vidéo enregistrée");
+      setOpen(false);
+      resetState();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur inattendue s'est produite");
+    } finally {
+      // Remet idle si une erreur a empêché resetState() d'être appelé
+      setStatus((prev) => (prev !== "idle" ? "idle" : prev));
     }
-
-    // 4. Enregistrer en base
-    setStatus("saving");
-    formData.set("videoPath", videoUrlResult.path);
-    if (thumbnailPath) formData.set("thumbnailPath", thumbnailPath);
-    formData.delete("file");
-    formData.delete("thumbnail");
-
-    const result = await createVideoResourceRecord(formData);
-
-    if (result?.error) {
-      setError(result.error);
-      setStatus("idle");
-      return;
-    }
-
-    toast.success("Vidéo enregistrée");
-    setOpen(false);
-    resetState();
   }
 
   function handleOpenChange(next: boolean) {
@@ -148,126 +168,149 @@ export function VideoUploadDialog({
       <DialogTrigger asChild>
         <Button>Nouvelle vidéo</Button>
       </DialogTrigger>
+
+      {/* Layout : header fixe + corps scrollable + footer fixe — évite le débordement horizontal */}
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        className="flex flex-col gap-0 p-0 sm:max-w-lg max-h-[90vh] overflow-hidden"
         aria-describedby={undefined}
       >
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0 border-b">
           <DialogTitle>Ajouter une vidéo</DialogTitle>
         </DialogHeader>
 
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-          <input type="hidden" name="chapterId" value={chapterId} />
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-1 min-h-0"
+        >
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <input type="hidden" name="chapterId" value={chapterId} />
 
-          {error ? (
-            <p
-              className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30"
-              role="alert"
-            >
-              {error}
-            </p>
-          ) : null}
+            {error ? (
+              <p
+                className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30"
+                role="alert"
+              >
+                {error}
+              </p>
+            ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Titre</Label>
-            <Input id="title" name="title" required maxLength={200} />
-          </div>
+            {status === "uploading" && (
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Téléversement en cours…</span>
+                  <span>{progress} %</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-primary/20">
+                  <div
+                    className="h-full bg-primary transition-all duration-200"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" maxLength={2000} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="durationSeconds">Durée (secondes)</Label>
-              <Input
-                id="durationSeconds"
-                name="durationSeconds"
-                type="number"
-                min={0}
+              <Label htmlFor="title">Titre</Label>
+              <Input id="title" name="title" required maxLength={200} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input id="description" name="description" maxLength={2000} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="durationSeconds">Durée (secondes)</Label>
+                <Input
+                  id="durationSeconds"
+                  name="durationSeconds"
+                  type="number"
+                  min={0}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="author">Auteur</Label>
+                <Input id="author" name="author" maxLength={120} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sequenceId">Séquence (optionnel)</Label>
+              <Select name="sequenceId" defaultValue="none">
+                <SelectTrigger id="sequenceId">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Directement dans le chapitre</SelectItem>
+                  {sequences.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file">Fichier vidéo</Label>
+              <FileInput
+                id="file"
+                name="file"
+                accept="video/*"
+                required
+                variant="video"
+                hint={`MP4, MOV, WebM… max ${MAX_VIDEO_MB} Mo`}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="author">Auteur</Label>
-              <Input id="author" name="author" maxLength={120} />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="sequenceId">Séquence (optionnel)</Label>
-            <Select name="sequenceId" defaultValue="none">
-              <SelectTrigger id="sequenceId">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Directement dans le chapitre</SelectItem>
-                {sequences.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="file">Fichier vidéo</Label>
-            <FileInput
-              id="file"
-              name="file"
-              accept="video/*"
-              required
-              variant="video"
-              hint={`MP4, MOV, WebM… max ${MAX_VIDEO_MB} Mo`}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="thumbnail">Miniature (optionnel)</Label>
-            <FileInput
-              id="thumbnail"
-              name="thumbnail"
-              accept="image/*"
-              variant="image"
-              hint={`PNG, JPG, WebP… max ${MAX_THUMB_MB} Mo`}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Statut</Label>
-            <Select name="status" defaultValue="draft">
-              <SelectTrigger id="status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Brouillon</SelectItem>
-                <SelectItem value="scheduled">Programmé</SelectItem>
-                <SelectItem value="published">Publié</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="publishedAt">Publication</Label>
-              <Input
-                id="publishedAt"
-                name="publishedAt"
-                type="datetime-local"
+              <Label htmlFor="thumbnail">Miniature (optionnel)</Label>
+              <FileInput
+                id="thumbnail"
+                name="thumbnail"
+                accept="image/*"
+                variant="image"
+                hint={`PNG, JPG, WebP… max ${MAX_THUMB_MB} Mo`}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="unpublishAt">Retrait</Label>
-              <Input
-                id="unpublishAt"
-                name="unpublishAt"
-                type="datetime-local"
-              />
+              <Label htmlFor="status">Statut</Label>
+              <Select name="status" defaultValue="draft">
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Brouillon</SelectItem>
+                  <SelectItem value="scheduled">Programmé</SelectItem>
+                  <SelectItem value="published">Publié</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="publishedAt">Publication</Label>
+                <Input
+                  id="publishedAt"
+                  name="publishedAt"
+                  type="datetime-local"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unpublishAt">Retrait</Label>
+                <Input
+                  id="unpublishAt"
+                  name="unpublishAt"
+                  type="datetime-local"
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 shrink-0 border-t">
             <Button
               type="button"
               variant="ghost"
@@ -278,7 +321,7 @@ export function VideoUploadDialog({
             </Button>
             <Button type="submit" disabled={busy}>
               {status === "uploading"
-                ? "Téléversement…"
+                ? `Téléversement… ${progress} %`
                 : status === "saving"
                   ? "Enregistrement…"
                   : "Téléverser"}
