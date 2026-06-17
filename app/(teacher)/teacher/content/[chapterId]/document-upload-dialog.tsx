@@ -52,12 +52,18 @@ export function DocumentUploadDialog({
       <DialogTrigger asChild>
         <Button variant="outline">Nouveau document</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Ajouter un document</DialogTitle>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="chapterId" value={chapterId} />
+
+          {state?.error ? (
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30" role="alert">
+              {state.error}
+            </p>
+          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor="title">Titre</Label>
@@ -71,12 +77,12 @@ export function DocumentUploadDialog({
 
           <div className="space-y-2">
             <Label htmlFor="sequenceId">Séquence (optionnel)</Label>
-            <Select name="sequenceId" defaultValue="">
+            <Select name="sequenceId" defaultValue="none">
               <SelectTrigger id="sequenceId">
-                <SelectValue placeholder="Aucune" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">(Directement dans le chapitre)</SelectItem>
+                <SelectItem value="none">Directement dans le chapitre</SelectItem>
                 {sequences.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
                     {s.title}
@@ -136,12 +142,6 @@ export function DocumentUploadDialog({
               />
             </div>
           </div>
-
-          {state?.error ? (
-            <p className="text-sm text-red-600" role="alert">
-              {state.error}
-            </p>
-          ) : null}
 
           <DialogFooter>
             <Button

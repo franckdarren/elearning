@@ -75,9 +75,10 @@ export async function createVideoResource(
 ): Promise<ActionState> {
   const user = await requireRole(["admin", "teacher", "manager"]);
 
+  const rawSeqId = formData.get("sequenceId") as string | null;
   const parsed = videoResourceSchema.safeParse({
     chapterId: formData.get("chapterId"),
-    sequenceId: formData.get("sequenceId") || undefined,
+    sequenceId: rawSeqId && rawSeqId !== "none" ? rawSeqId : undefined,
     title: formData.get("title"),
     description: formData.get("description"),
     durationSeconds: formData.get("durationSeconds") || undefined,
@@ -173,9 +174,10 @@ export async function createDocumentResource(
 ): Promise<ActionState> {
   const user = await requireRole(["admin", "teacher", "manager"]);
 
+  const rawSeqIdDoc = formData.get("sequenceId") as string | null;
   const parsed = documentResourceSchema.safeParse({
     chapterId: formData.get("chapterId"),
-    sequenceId: formData.get("sequenceId") || undefined,
+    sequenceId: rawSeqIdDoc && rawSeqIdDoc !== "none" ? rawSeqIdDoc : undefined,
     title: formData.get("title"),
     description: formData.get("description"),
     documentAccess: formData.get("documentAccess") ?? "view_only",
