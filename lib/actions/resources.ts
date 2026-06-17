@@ -166,6 +166,75 @@ export async function createVideoResource(
 }
 
 // ---------------------------------------------------------------------------
+// Video — save record after direct client upload (no file body)
+// ---------------------------------------------------------------------------
+export async function createVideoResourceRecord(
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireRole(["admin", "teacher", "manager"]);
+
+  const videoPath = formData.get("videoPath") as string | null;
+  if (!videoPath) return { error: "Chemin vidéo manquant" };
+
+  const rawSeqId = formData.get("sequenceId") as string | null;
+  const parsed = videoResourceSchema.safeParse({
+    chapterId: formData.get("chapterId"),
+    sequenceId: rawSeqId && rawSeqId !== "none" ? rawSeqId : undefined,
+    title: formData.get("title"),
+    description: formData.get("description"),
+    durationSeconds: formData.get("durationSeconds") || undefined,
+    author: formData.get("author"),
+    status: formData.get("status") ?? "draft",
+    publishedAt: formData.get("publishedAt") ?? "",
+    unpublishAt: formData.get("unpublishAt") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
+  }
+
+  const data = parsed.data;
+  const c = await chapterScope(data.chapterId);
+  if (!c) return { error: "Chapitre introuvable" };
+
+  try {
+    await assertWriteScope(user, c.classId, c.subjectId);
+  } catch {
+    return { error: "Accès refusé à ce chapitre" };
+  }
+
+  const thumbnailPath = (formData.get("thumbnailPath") as string | null) || null;
+  const publishedAt = nullableTimestamp(data.publishedAt);
+  const unpublishAt = nullableTimestamp(data.unpublishAt);
+  const status = autoStatus(data.status, publishedAt);
+
+  try {
+    await db.insert(resources).values({
+      chapterId: data.chapterId,
+      sequenceId: data.sequenceId ?? null,
+      type: "video",
+      title: data.title,
+      description: data.description ?? null,
+      videoPath,
+      thumbnailPath,
+      durationSeconds: data.durationSeconds ?? null,
+      author: data.author ?? null,
+      status,
+      publishedAt,
+      unpublishAt,
+      position: await nextPosition(data.chapterId),
+      createdBy: user.id,
+    });
+  } catch (e) {
+    return {
+      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  revalidatePath(`/teacher/content/${data.chapterId}`);
+  return { success: "Vidéo enregistrée" };
+}
+
+// ---------------------------------------------------------------------------
 // Document
 // ---------------------------------------------------------------------------
 export async function createDocumentResource(
@@ -215,6 +284,71 @@ export async function createDocumentResource(
     return {
       error: `Échec du stockage document : ${e instanceof Error ? e.message : String(e)}`,
     };
+  }
+
+  const publishedAt = nullableTimestamp(data.publishedAt);
+  const unpublishAt = nullableTimestamp(data.unpublishAt);
+  const status = autoStatus(data.status, publishedAt);
+
+  try {
+    await db.insert(resources).values({
+      chapterId: data.chapterId,
+      sequenceId: data.sequenceId ?? null,
+      type: "document",
+      title: data.title,
+      description: data.description ?? null,
+      documentPath,
+      documentAccess: data.documentAccess,
+      status,
+      publishedAt,
+      unpublishAt,
+      position: await nextPosition(data.chapterId),
+      createdBy: user.id,
+    });
+  } catch (e) {
+    return {
+      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  revalidatePath(`/teacher/content/${data.chapterId}`);
+  return { success: "Document enregistré" };
+}
+
+// ---------------------------------------------------------------------------
+// Document — save record after direct client upload (no file body)
+// ---------------------------------------------------------------------------
+export async function createDocumentResourceRecord(
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireRole(["admin", "teacher", "manager"]);
+
+  const documentPath = formData.get("documentPath") as string | null;
+  if (!documentPath) return { error: "Chemin document manquant" };
+
+  const rawSeqId = formData.get("sequenceId") as string | null;
+  const parsed = documentResourceSchema.safeParse({
+    chapterId: formData.get("chapterId"),
+    sequenceId: rawSeqId && rawSeqId !== "none" ? rawSeqId : undefined,
+    title: formData.get("title"),
+    description: formData.get("description"),
+    documentAccess: formData.get("documentAccess") ?? "view_only",
+    status: formData.get("status") ?? "draft",
+    publishedAt: formData.get("publishedAt") ?? "",
+    unpublishAt: formData.get("unpublishAt") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
+  }
+
+  const data = parsed.data;
+  const c = await chapterScope(data.chapterId);
+  if (!c) return { error: "Chapitre introuvable" };
+
+  try {
+    await assertWriteScope(user, c.classId, c.subjectId);
+  } catch {
+    return { error: "Accès refusé à ce chapitre" };
   }
 
   const publishedAt = nullableTimestamp(data.publishedAt);

@@ -1,11 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  createDocumentResource,
-  type ActionState,
-} from "@/lib/actions/resources";
+import { getDocumentSignedUploadUrl } from "@/lib/actions/upload-urls";
+import { createDocumentResourceRecord } from "@/lib/actions/resources";
+import { FileInput } from "@/components/shared/file-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +26,25 @@ import {
 
 type Sequence = { id: string; title: string };
 
+const MAX_DOC_MB = 50;
+
+async function uploadToSignedUrl(
+  signedUrl: string,
+  file: File,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(signedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: file,
+    });
+    if (!res.ok) return { ok: false, error: `Erreur HTTP ${res.status}` };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export function DocumentUploadDialog({
   chapterId,
   sequences,
@@ -35,20 +53,76 @@ export function DocumentUploadDialog({
   sequences: Sequence[];
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(
-    createDocumentResource,
-    null,
-  );
+  const [status, setStatus] = useState<"idle" | "uploading" | "saving">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (state?.success) {
-      toast.success(state.success);
-      setOpen(false);
+  function resetState() {
+    setStatus("idle");
+    setError(null);
+    formRef.current?.reset();
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    const file = formData.get("file") as File | null;
+    if (!file || file.size === 0) {
+      setError("Veuillez sélectionner un fichier.");
+      return;
     }
-  }, [state]);
+    if (file.size > MAX_DOC_MB * 1024 * 1024) {
+      setError(`Fichier trop volumineux (max ${MAX_DOC_MB} MB).`);
+      return;
+    }
+
+    setError(null);
+    setStatus("uploading");
+
+    // 1. Obtenir l'URL signée
+    const urlResult = await getDocumentSignedUploadUrl(chapterId, file.name);
+    if (!urlResult.ok) {
+      setError(urlResult.error);
+      setStatus("idle");
+      return;
+    }
+
+    // 2. Upload direct vers Supabase Storage
+    const upload = await uploadToSignedUrl(urlResult.signedUrl, file);
+    if (!upload.ok) {
+      setError(`Échec du téléversement : ${upload.error}`);
+      setStatus("idle");
+      return;
+    }
+
+    // 3. Enregistrer en base
+    setStatus("saving");
+    formData.set("documentPath", urlResult.path);
+    formData.delete("file");
+
+    const result = await createDocumentResourceRecord(formData);
+
+    if (result?.error) {
+      setError(result.error);
+      setStatus("idle");
+      return;
+    }
+
+    toast.success("Document enregistré");
+    setOpen(false);
+    resetState();
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next) resetState();
+    setOpen(next);
+  }
+
+  const busy = status !== "idle";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">Nouveau document</Button>
       </DialogTrigger>
@@ -56,12 +130,16 @@ export function DocumentUploadDialog({
         <DialogHeader>
           <DialogTitle>Ajouter un document</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="chapterId" value={chapterId} />
 
-          {state?.error ? (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30" role="alert">
-              {state.error}
+          {error ? (
+            <p
+              className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30"
+              role="alert"
+            >
+              {error}
             </p>
           ) : null}
 
@@ -93,8 +171,15 @@ export function DocumentUploadDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="file">Fichier (PDF, DOCX… max 50 MB)</Label>
-            <Input id="file" name="file" type="file" required />
+            <Label htmlFor="file">Fichier</Label>
+            <FileInput
+              id="file"
+              name="file"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+              required
+              variant="document"
+              hint={`PDF, DOCX, PPTX… max ${MAX_DOC_MB} Mo`}
+            />
           </div>
 
           <div className="space-y-2">
@@ -147,12 +232,17 @@ export function DocumentUploadDialog({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
+              disabled={busy}
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Envoi…" : "Téléverser"}
+            <Button type="submit" disabled={busy}>
+              {status === "uploading"
+                ? "Téléversement…"
+                : status === "saving"
+                  ? "Enregistrement…"
+                  : "Téléverser"}
             </Button>
           </DialogFooter>
         </form>

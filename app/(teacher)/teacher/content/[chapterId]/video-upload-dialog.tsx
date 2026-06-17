@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  createVideoResource,
-  type ActionState,
-} from "@/lib/actions/resources";
+  getVideoSignedUploadUrl,
+  getThumbnailSignedUploadUrl,
+} from "@/lib/actions/upload-urls";
+import { createVideoResourceRecord } from "@/lib/actions/resources";
+import { FileInput } from "@/components/shared/file-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +29,26 @@ import {
 
 type Sequence = { id: string; title: string };
 
+const MAX_VIDEO_MB = 100;
+const MAX_THUMB_MB = 5;
+
+async function uploadToSignedUrl(
+  signedUrl: string,
+  file: File,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(signedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: file,
+    });
+    if (!res.ok) return { ok: false, error: `Erreur HTTP ${res.status}` };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export function VideoUploadDialog({
   chapterId,
   sequences,
@@ -35,33 +57,114 @@ export function VideoUploadDialog({
   sequences: Sequence[];
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(
-    createVideoResource,
-    null,
-  );
+  const [status, setStatus] = useState<"idle" | "uploading" | "saving">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (state?.success) {
-      toast.success(state.success);
-      setOpen(false);
+  function resetState() {
+    setStatus("idle");
+    setError(null);
+    formRef.current?.reset();
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    const file = formData.get("file") as File | null;
+    if (!file || file.size === 0) {
+      setError("Veuillez sélectionner un fichier vidéo.");
+      return;
     }
-  }, [state]);
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      setError(`Fichier trop volumineux (max ${MAX_VIDEO_MB} MB).`);
+      return;
+    }
+
+    const thumb = formData.get("thumbnail") as File | null;
+    if (thumb && thumb.size > MAX_THUMB_MB * 1024 * 1024) {
+      setError(`Miniature trop volumineuse (max ${MAX_THUMB_MB} MB).`);
+      return;
+    }
+
+    setError(null);
+    setStatus("uploading");
+
+    // 1. Obtenir l'URL signée pour la vidéo
+    const videoUrlResult = await getVideoSignedUploadUrl(chapterId, file.name);
+    if (!videoUrlResult.ok) {
+      setError(videoUrlResult.error);
+      setStatus("idle");
+      return;
+    }
+
+    // 2. Upload direct vers Supabase Storage
+    const videoUpload = await uploadToSignedUrl(videoUrlResult.signedUrl, file);
+    if (!videoUpload.ok) {
+      setError(`Échec du téléversement vidéo : ${videoUpload.error}`);
+      setStatus("idle");
+      return;
+    }
+
+    // 3. Upload miniature si présente
+    let thumbnailPath: string | null = null;
+    if (thumb && thumb.size > 0) {
+      const thumbUrlResult = await getThumbnailSignedUploadUrl(chapterId, thumb.name);
+      if (thumbUrlResult.ok) {
+        const thumbUpload = await uploadToSignedUrl(thumbUrlResult.signedUrl, thumb);
+        if (thumbUpload.ok) thumbnailPath = thumbUrlResult.path;
+      }
+    }
+
+    // 4. Enregistrer en base
+    setStatus("saving");
+    formData.set("videoPath", videoUrlResult.path);
+    if (thumbnailPath) formData.set("thumbnailPath", thumbnailPath);
+    formData.delete("file");
+    formData.delete("thumbnail");
+
+    const result = await createVideoResourceRecord(formData);
+
+    if (result?.error) {
+      setError(result.error);
+      setStatus("idle");
+      return;
+    }
+
+    toast.success("Vidéo enregistrée");
+    setOpen(false);
+    resetState();
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next) resetState();
+    setOpen(next);
+  }
+
+  const busy = status !== "idle";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>Nouvelle vidéo</Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" aria-describedby={undefined}>
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle>Ajouter une vidéo</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="chapterId" value={chapterId} />
 
-          {state?.error ? (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30" role="alert">
-              {state.error}
+          {error ? (
+            <p
+              className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30"
+              role="alert"
+            >
+              {error}
             </p>
           ) : null}
 
@@ -109,23 +212,25 @@ export function VideoUploadDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="file">Fichier vidéo (max 100 MB)</Label>
-            <Input
+            <Label htmlFor="file">Fichier vidéo</Label>
+            <FileInput
               id="file"
               name="file"
-              type="file"
               accept="video/*"
               required
+              variant="video"
+              hint={`MP4, MOV, WebM… max ${MAX_VIDEO_MB} Mo`}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="thumbnail">Miniature (optionnel, max 5 MB)</Label>
-            <Input
+            <Label htmlFor="thumbnail">Miniature (optionnel)</Label>
+            <FileInput
               id="thumbnail"
               name="thumbnail"
-              type="file"
               accept="image/*"
+              variant="image"
+              hint={`PNG, JPG, WebP… max ${MAX_THUMB_MB} Mo`}
             />
           </div>
 
@@ -166,12 +271,17 @@ export function VideoUploadDialog({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
+              disabled={busy}
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Envoi…" : "Téléverser"}
+            <Button type="submit" disabled={busy}>
+              {status === "uploading"
+                ? "Téléversement…"
+                : status === "saving"
+                  ? "Enregistrement…"
+                  : "Téléverser"}
             </Button>
           </DialogFooter>
         </form>
