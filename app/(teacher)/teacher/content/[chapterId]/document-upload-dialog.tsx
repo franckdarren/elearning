@@ -28,21 +28,27 @@ type Sequence = { id: string; title: string };
 
 const MAX_DOC_MB = 50;
 
-async function uploadToSignedUrl(
+function uploadWithProgress(
   signedUrl: string,
   file: File,
+  onProgress: (pct: number) => void,
 ): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const res = await fetch(signedUrl, {
-      method: "PUT",
-      headers: { "Content-Type": file.type || "application/octet-stream" },
-      body: file,
-    });
-    if (!res.ok) return { ok: false, error: `Erreur HTTP ${res.status}` };
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
-  }
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", signedUrl);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.timeout = 5 * 60 * 1000; // 5 min
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve({ ok: true })
+        : resolve({ ok: false, error: `Erreur HTTP ${xhr.status}` });
+    xhr.onerror = () => resolve({ ok: false, error: "Erreur réseau" });
+    xhr.ontimeout = () => resolve({ ok: false, error: "Délai dépassé (5 min)" });
+    xhr.send(file);
+  });
 }
 
 export function DocumentUploadDialog({
@@ -54,11 +60,13 @@ export function DocumentUploadDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "uploading" | "saving">("idle");
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   function resetState() {
     setStatus("idle");
+    setProgress(0);
     setError(null);
     formRef.current?.reset();
   }
@@ -79,6 +87,7 @@ export function DocumentUploadDialog({
 
     setError(null);
     setStatus("uploading");
+    setProgress(0);
 
     // 1. Obtenir l'URL signée
     const urlResult = await getDocumentSignedUploadUrl(chapterId, file.name);
@@ -88,8 +97,8 @@ export function DocumentUploadDialog({
       return;
     }
 
-    // 2. Upload direct vers Supabase Storage
-    const upload = await uploadToSignedUrl(urlResult.signedUrl, file);
+    // 2. Upload direct vers Supabase Storage avec progression
+    const upload = await uploadWithProgress(urlResult.signedUrl, file, setProgress);
     if (!upload.ok) {
       setError(`Échec du téléversement : ${upload.error}`);
       setStatus("idle");
@@ -146,6 +155,21 @@ export function DocumentUploadDialog({
                 {error}
               </p>
             ) : null}
+
+            {status === "uploading" && (
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Téléversement en cours…</span>
+                  <span>{progress} %</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-primary/20">
+                  <div
+                    className="h-full bg-primary transition-all duration-200"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="title">Titre</Label>
@@ -244,7 +268,7 @@ export function DocumentUploadDialog({
             </Button>
             <Button type="submit" disabled={busy}>
               {status === "uploading"
-                ? "Téléversement…"
+                ? `Téléversement… ${progress} %`
                 : status === "saving"
                   ? "Enregistrement…"
                   : "Téléverser"}
