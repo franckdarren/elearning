@@ -1,3 +1,7 @@
+"use client";
+
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { toggleUserActive } from "@/lib/actions/users";
 import { Button } from "@/components/ui/button";
 
@@ -8,12 +12,30 @@ export function ToggleActiveButton({
   id: string;
   isActive: boolean;
 }) {
+  const [pending, startTransition] = useTransition();
+
+  function handleClick() {
+    const fd = new FormData();
+    fd.set("id", id);
+    startTransition(async () => {
+      try {
+        await toggleUserActive(fd);
+        toast.success(isActive ? "Utilisateur désactivé" : "Utilisateur réactivé");
+      } catch {
+        toast.error("Erreur lors de la mise à jour");
+      }
+    });
+  }
+
   return (
-    <form action={toggleUserActive}>
-      <input type="hidden" name="id" value={id} />
-      <Button type="submit" variant="ghost" size="sm">
-        {isActive ? "Désactiver" : "Réactiver"}
-      </Button>
-    </form>
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      disabled={pending}
+      onClick={handleClick}
+    >
+      {isActive ? "Désactiver" : "Réactiver"}
+    </Button>
   );
 }

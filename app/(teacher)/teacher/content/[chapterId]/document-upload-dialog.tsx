@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getDocumentSignedUploadUrl } from "@/lib/actions/upload-urls";
 import { createDocumentResourceRecord } from "@/lib/actions/resources";
@@ -63,7 +63,7 @@ export function DocumentUploadDialog({
     formRef.current?.reset();
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
@@ -126,109 +126,114 @@ export function DocumentUploadDialog({
       <DialogTrigger asChild>
         <Button variant="outline">Nouveau document</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
-        <DialogHeader>
+      <DialogContent
+        className="flex flex-col gap-0 p-0 sm:max-w-lg max-h-[90vh] overflow-hidden"
+        aria-describedby={undefined}
+      >
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0 border-b">
           <DialogTitle>Ajouter un document</DialogTitle>
         </DialogHeader>
 
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-          <input type="hidden" name="chapterId" value={chapterId} />
+        <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <input type="hidden" name="chapterId" value={chapterId} />
 
-          {error ? (
-            <p
-              className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30"
-              role="alert"
-            >
-              {error}
-            </p>
-          ) : null}
+            {error ? (
+              <p
+                className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/30"
+                role="alert"
+              >
+                {error}
+              </p>
+            ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Titre</Label>
-            <Input id="title" name="title" required maxLength={200} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" maxLength={2000} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="sequenceId">Séquence (optionnel)</Label>
-            <Select name="sequenceId" defaultValue="none">
-              <SelectTrigger id="sequenceId">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Directement dans le chapitre</SelectItem>
-                {sequences.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="file">Fichier</Label>
-            <FileInput
-              id="file"
-              name="file"
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
-              required
-              variant="document"
-              hint={`PDF, DOCX, PPTX… max ${MAX_DOC_MB} Mo`}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="documentAccess">Accès</Label>
-            <Select name="documentAccess" defaultValue="view_only">
-              <SelectTrigger id="documentAccess">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="view_only">Lecture seule</SelectItem>
-                <SelectItem value="downloadable">Téléchargeable</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Statut</Label>
-            <Select name="status" defaultValue="draft">
-              <SelectTrigger id="status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Brouillon</SelectItem>
-                <SelectItem value="scheduled">Programmé</SelectItem>
-                <SelectItem value="published">Publié</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="publishedAt">Publication</Label>
-              <Input
-                id="publishedAt"
-                name="publishedAt"
-                type="datetime-local"
+              <Label htmlFor="title">Titre</Label>
+              <Input id="title" name="title" required maxLength={200} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input id="description" name="description" maxLength={2000} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sequenceId">Séquence (optionnel)</Label>
+              <Select name="sequenceId" defaultValue="none">
+                <SelectTrigger id="sequenceId">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Directement dans le chapitre</SelectItem>
+                  {sequences.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file">Fichier</Label>
+              <FileInput
+                id="file"
+                name="file"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                required
+                variant="document"
+                hint={`PDF, DOCX, PPTX… max ${MAX_DOC_MB} Mo`}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="unpublishAt">Retrait</Label>
-              <Input
-                id="unpublishAt"
-                name="unpublishAt"
-                type="datetime-local"
-              />
+              <Label htmlFor="documentAccess">Accès</Label>
+              <Select name="documentAccess" defaultValue="view_only">
+                <SelectTrigger id="documentAccess">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="view_only">Lecture seule</SelectItem>
+                  <SelectItem value="downloadable">Téléchargeable</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Statut</Label>
+              <Select name="status" defaultValue="draft">
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Brouillon</SelectItem>
+                  <SelectItem value="scheduled">Programmé</SelectItem>
+                  <SelectItem value="published">Publié</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="publishedAt">Publication</Label>
+                <Input
+                  id="publishedAt"
+                  name="publishedAt"
+                  type="datetime-local"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unpublishAt">Retrait</Label>
+                <Input
+                  id="unpublishAt"
+                  name="unpublishAt"
+                  type="datetime-local"
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 shrink-0 border-t">
             <Button
               type="button"
               variant="ghost"

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { deleteResource, moveResource } from "@/lib/actions/resources";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,9 +39,29 @@ function StatusBadge({ status }: { status: keyof typeof STATUS_LABEL }) {
 }
 
 export function ResourceRow({ r }: ResourceRowProps) {
+  const [movePending, startMove] = useTransition();
+
+  function handleMove(direction: "up" | "down") {
+    const fd = new FormData();
+    fd.set("id", r.id);
+    fd.set("direction", direction);
+    startMove(async () => {
+      try {
+        await moveResource(fd);
+      } catch {
+        toast.error("Erreur lors du déplacement");
+      }
+    });
+  }
+
   async function handleDelete(formData: FormData) {
     formData.set("id", r.id);
-    await deleteResource(formData);
+    try {
+      await deleteResource(formData);
+      toast.success(`"${r.title}" supprimé`);
+    } catch {
+      toast.error("Erreur lors de la suppression");
+    }
   }
 
   return (
@@ -50,20 +72,24 @@ export function ResourceRow({ r }: ResourceRowProps) {
       <span className="flex-1">{r.title}</span>
       <StatusBadge status={r.status} />
       <div className="flex gap-1">
-        <form action={moveResource}>
-          <input type="hidden" name="id" value={r.id} />
-          <input type="hidden" name="direction" value="up" />
-          <Button type="submit" variant="ghost" size="sm">
-            ↑
-          </Button>
-        </form>
-        <form action={moveResource}>
-          <input type="hidden" name="id" value={r.id} />
-          <input type="hidden" name="direction" value="down" />
-          <Button type="submit" variant="ghost" size="sm">
-            ↓
-          </Button>
-        </form>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={movePending}
+          onClick={() => handleMove("up")}
+        >
+          ↑
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={movePending}
+          onClick={() => handleMove("down")}
+        >
+          ↓
+        </Button>
         <ResourcePreviewDialog resourceId={r.id} />
         <StatusDialog
           resource={{

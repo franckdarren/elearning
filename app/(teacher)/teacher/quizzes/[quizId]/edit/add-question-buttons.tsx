@@ -1,36 +1,49 @@
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { addQuestion } from "@/lib/actions/quizzes";
+import { Button } from "@/components/ui/button";
+
+const TYPES = [
+  { type: "single", label: "+ Question unique", text: "Nouvelle question" },
+  { type: "multiple", label: "+ Question à choix multiples", text: "Nouvelle question" },
+  { type: "true_false", label: "+ Vrai / Faux", text: "Nouvelle affirmation" },
+] as const;
 
 export function AddQuestionButtons({ quizId }: { quizId: string }) {
+  const [pending, startTransition] = useTransition();
+
+  function handleAdd(type: string, text: string) {
+    const fd = new FormData();
+    fd.set("quizId", quizId);
+    fd.set("type", type);
+    fd.set("text", text);
+    fd.set("points", "1");
+    startTransition(async () => {
+      try {
+        await addQuestion(fd);
+        toast.success("Question ajoutée");
+      } catch {
+        toast.error("Erreur lors de l'ajout de la question");
+      }
+    });
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
-      <form action={addQuestion}>
-        <input type="hidden" name="quizId" value={quizId} />
-        <input type="hidden" name="type" value="single" />
-        <input type="hidden" name="text" value="Nouvelle question" />
-        <input type="hidden" name="points" value="1" />
-        <Button type="submit" variant="outline" size="sm">
-          + Question unique
+      {TYPES.map(({ type, label, text }) => (
+        <Button
+          key={type}
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          onClick={() => handleAdd(type, text)}
+        >
+          {label}
         </Button>
-      </form>
-      <form action={addQuestion}>
-        <input type="hidden" name="quizId" value={quizId} />
-        <input type="hidden" name="type" value="multiple" />
-        <input type="hidden" name="text" value="Nouvelle question" />
-        <input type="hidden" name="points" value="1" />
-        <Button type="submit" variant="outline" size="sm">
-          + Question à choix multiples
-        </Button>
-      </form>
-      <form action={addQuestion}>
-        <input type="hidden" name="quizId" value={quizId} />
-        <input type="hidden" name="type" value="true_false" />
-        <input type="hidden" name="text" value="Nouvelle affirmation" />
-        <input type="hidden" name="points" value="1" />
-        <Button type="submit" variant="outline" size="sm">
-          + Vrai / Faux
-        </Button>
-      </form>
+      ))}
     </div>
   );
 }

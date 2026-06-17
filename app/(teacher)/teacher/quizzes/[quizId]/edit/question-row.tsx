@@ -1,3 +1,7 @@
+"use client";
+
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +46,96 @@ export function QuestionRow({
   options: Option[];
   index: number;
 }) {
+  const [pending, startTransition] = useTransition();
+
+  function run(
+    action: (fd: FormData) => Promise<void>,
+    build: (fd: FormData) => void,
+    successMsg: string,
+    errorMsg: string,
+  ) {
+    const fd = new FormData();
+    build(fd);
+    startTransition(async () => {
+      try {
+        await action(fd);
+        toast.success(successMsg);
+      } catch {
+        toast.error(errorMsg);
+      }
+    });
+  }
+
+  function handleUpdateQuestion(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const raw = new FormData(e.currentTarget);
+    run(
+      updateQuestion,
+      (fd) => {
+        fd.set("id", question.id);
+        fd.set("quizId", quizId);
+        fd.set("type", question.type);
+        fd.set("text", raw.get("text") as string);
+        fd.set("points", raw.get("points") as string);
+      },
+      "Question enregistrée",
+      "Erreur lors de l'enregistrement",
+    );
+  }
+
+  function handleDeleteQuestion() {
+    run(
+      deleteQuestion,
+      (fd) => {
+        fd.set("id", question.id);
+        fd.set("quizId", quizId);
+      },
+      "Question supprimée",
+      "Erreur lors de la suppression",
+    );
+  }
+
+  function handleUpdateOption(e: React.FormEvent<HTMLFormElement>, optionId: string) {
+    e.preventDefault();
+    const raw = new FormData(e.currentTarget);
+    run(
+      updateOption,
+      (fd) => {
+        fd.set("id", optionId);
+        fd.set("questionId", question.id);
+        fd.set("quizId", quizId);
+        fd.set("text", raw.get("text") as string);
+        fd.set("isCorrect", raw.get("isCorrect") === "true" ? "true" : "false");
+      },
+      "Option enregistrée",
+      "Erreur lors de l'enregistrement de l'option",
+    );
+  }
+
+  function handleDeleteOption(optionId: string) {
+    run(
+      deleteOption,
+      (fd) => {
+        fd.set("id", optionId);
+        fd.set("quizId", quizId);
+      },
+      "Option supprimée",
+      "Erreur lors de la suppression de l'option",
+    );
+  }
+
+  function handleAddOption() {
+    run(
+      addOption,
+      (fd) => {
+        fd.set("questionId", question.id);
+        fd.set("quizId", quizId);
+      },
+      "Option ajoutée",
+      "Erreur lors de l'ajout de l'option",
+    );
+  }
+
   return (
     <div className="space-y-3 rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex items-center justify-between">
@@ -49,27 +143,22 @@ export function QuestionRow({
           <span className="text-sm font-semibold">Q{index + 1}</span>
           <Badge variant="outline">{TYPE_LABEL[question.type]}</Badge>
         </div>
-        <form action={deleteQuestion}>
-          <input type="hidden" name="id" value={question.id} />
-          <input type="hidden" name="quizId" value={quizId} />
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            className="text-red-600"
-          >
-            Supprimer la question
-          </Button>
-        </form>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-red-600"
+          disabled={pending}
+          onClick={handleDeleteQuestion}
+        >
+          Supprimer la question
+        </Button>
       </div>
 
       <form
-        action={updateQuestion}
+        onSubmit={handleUpdateQuestion}
         className="grid gap-3 sm:grid-cols-[1fr_120px_120px]"
       >
-        <input type="hidden" name="id" value={question.id} />
-        <input type="hidden" name="quizId" value={quizId} />
-        <input type="hidden" name="type" value={question.type} />
         <div className="space-y-1">
           <Label htmlFor={`q-${question.id}-text`} className="text-xs">
             Énoncé
@@ -95,7 +184,7 @@ export function QuestionRow({
           />
         </div>
         <div className="flex items-end">
-          <Button type="submit" variant="outline" size="sm" className="w-full">
+          <Button type="submit" variant="outline" size="sm" className="w-full" disabled={pending}>
             Enregistrer
           </Button>
         </div>
@@ -109,10 +198,10 @@ export function QuestionRow({
           <ul className="space-y-2">
             {options.map((o) => (
               <li key={o.id}>
-                <form className="flex items-center gap-2">
-                  <input type="hidden" name="id" value={o.id} />
-                  <input type="hidden" name="questionId" value={question.id} />
-                  <input type="hidden" name="quizId" value={quizId} />
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={(e) => handleUpdateOption(e, o.id)}
+                >
                   <label className="flex items-center gap-1 text-xs text-zinc-600">
                     <input
                       type="checkbox"
@@ -132,19 +221,20 @@ export function QuestionRow({
                   />
                   <Button
                     type="submit"
-                    formAction={updateOption}
                     variant="ghost"
                     size="sm"
+                    disabled={pending}
                   >
                     OK
                   </Button>
                   {question.type !== "true_false" ? (
                     <Button
-                      type="submit"
-                      formAction={deleteOption}
+                      type="button"
                       variant="ghost"
                       size="sm"
                       className="text-red-600"
+                      disabled={pending}
+                      onClick={() => handleDeleteOption(o.id)}
                     >
                       ×
                     </Button>
@@ -155,13 +245,15 @@ export function QuestionRow({
           </ul>
         )}
         {question.type !== "true_false" ? (
-          <form action={addOption}>
-            <input type="hidden" name="questionId" value={question.id} />
-            <input type="hidden" name="quizId" value={quizId} />
-            <Button type="submit" variant="outline" size="sm">
-              + Ajouter une option
-            </Button>
-          </form>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            onClick={handleAddOption}
+          >
+            + Ajouter une option
+          </Button>
         ) : null}
       </div>
     </div>
