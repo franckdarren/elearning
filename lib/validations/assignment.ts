@@ -14,7 +14,8 @@ export const studentScopeSchema = z.object({
     .string()
     .uuid()
     .optional()
-    .or(z.literal("").transform(() => undefined)),
+    .or(z.literal("").transform(() => undefined))
+    .or(z.literal("__none__").transform(() => undefined)),
   subjectIds: z.array(z.string().uuid()).default([]),
 });
 

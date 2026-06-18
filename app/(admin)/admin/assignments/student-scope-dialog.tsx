@@ -38,7 +38,7 @@ type Props = {
 
 export function StudentScopeDialog({ student, classes, trigger }: Props) {
   const [open, setOpen] = useState(false);
-  const [classId, setClassId] = useState<string>(student.classId ?? "");
+  const [classId, setClassId] = useState<string>(student.classId ?? "__none__");
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     setStudentScope,
     null,
@@ -80,7 +80,7 @@ export function StudentScopeDialog({ student, classes, trigger }: Props) {
                 <SelectValue placeholder="Non inscrit" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">(Non inscrit)</SelectItem>
+                <SelectItem value="__none__">(Non inscrit)</SelectItem>
                 {classes.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}

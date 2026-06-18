@@ -65,7 +65,7 @@ export async function setStudentScope(
 
   const parsed = studentScopeSchema.safeParse({
     studentId: formData.get("studentId"),
-    classId: formData.get("classId") || undefined,
+    classId: formData.get("classId") as string | undefined,
     subjectIds: formData.getAll("subjectIds").map(String).filter(Boolean),
   });
   if (!parsed.success) {
