@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { updateUser, type ActionState } from "@/lib/actions/users";
+import { updateUser } from "@/lib/actions/users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,20 +35,33 @@ type Props = {
 
 export function EditUserDialog({ user }: Props) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(
-    updateUser,
-    null,
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (state?.success) {
-      toast.success(state.success);
-      setOpen(false);
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    setError(null);
+    startTransition(async () => {
+      const result = await updateUser(null, formData);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        toast.success(result?.success ?? "Utilisateur mis à jour");
+        setOpen(false);
+      }
+    });
+  }
+
+  function handleOpenChange(value: boolean) {
+    if (!pending) {
+      setOpen(value);
+      if (!value) setError(null);
     }
-  }, [state]);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm">
           Modifier
@@ -58,7 +71,7 @@ export function EditUserDialog({ user }: Props) {
         <DialogHeader>
           <DialogTitle>Modifier {user.email}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input type="hidden" name="id" value={user.id} />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -107,9 +120,9 @@ export function EditUserDialog({ user }: Props) {
             </Select>
           </div>
 
-          {state?.error ? (
+          {error ? (
             <p className="text-sm text-red-600" role="alert">
-              {state.error}
+              {error}
             </p>
           ) : null}
 
@@ -117,12 +130,13 @@ export function EditUserDialog({ user }: Props) {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setOpen(false)}
+              disabled={pending}
+              onClick={() => handleOpenChange(false)}
             >
               Annuler
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "…" : "Enregistrer"}
+              {pending ? "Enregistrement…" : "Enregistrer"}
             </Button>
           </DialogFooter>
         </form>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { createUser, type ActionState } from "@/lib/actions/users";
+import { createUser } from "@/lib/actions/users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,20 +24,33 @@ import {
 
 export function CreateUserDialog() {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(
-    createUser,
-    null,
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (state?.success) {
-      toast.success(state.success);
-      setOpen(false);
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    setError(null);
+    startTransition(async () => {
+      const result = await createUser(null, formData);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        toast.success(result?.success ?? "Utilisateur créé");
+        setOpen(false);
+      }
+    });
+  }
+
+  function handleOpenChange(value: boolean) {
+    if (!pending) {
+      setOpen(value);
+      if (!value) setError(null);
     }
-  }, [state]);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>Inviter un utilisateur</Button>
       </DialogTrigger>
@@ -45,7 +58,7 @@ export function CreateUserDialog() {
         <DialogHeader>
           <DialogTitle>Inviter un utilisateur</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="firstName">Prénom</Label>
@@ -82,9 +95,9 @@ export function CreateUserDialog() {
             </p>
           </div>
 
-          {state?.error ? (
+          {error ? (
             <p className="text-sm text-red-600" role="alert">
-              {state.error}
+              {error}
             </p>
           ) : null}
 
@@ -92,7 +105,8 @@ export function CreateUserDialog() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setOpen(false)}
+              disabled={pending}
+              onClick={() => handleOpenChange(false)}
             >
               Annuler
             </Button>
