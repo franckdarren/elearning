@@ -103,6 +103,7 @@ export function AppSidebar({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const navItems = NAV_BY_ROLE[user.role] ?? [];
 
   useEffect(() => {
@@ -207,14 +208,26 @@ export function AppSidebar({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <form action={signOut}>
-                  <DropdownMenuItem asChild>
-                    <button type="submit" className="w-full cursor-pointer">
+                <DropdownMenuItem asChild>
+                  <button
+                    type="button"
+                    className="w-full cursor-pointer"
+                    disabled={isSigningOut}
+                    onClick={() => {
+                      setIsSigningOut(true);
+                      startTransition(async () => {
+                        await signOut();
+                      });
+                    }}
+                  >
+                    {isSigningOut ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
                       <LogOut className="h-4 w-4" />
-                      Se déconnecter
-                    </button>
-                  </DropdownMenuItem>
-                </form>
+                    )}
+                    {isSigningOut ? "Déconnexion…" : "Se déconnecter"}
+                  </button>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
