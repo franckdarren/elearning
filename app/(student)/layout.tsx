@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { NavBreadcrumb } from "@/components/shared/nav-breadcrumb";
 import { NotificationBell } from "@/components/shared/notification-bell";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export default async function StudentLayout({
   children,
@@ -24,7 +25,8 @@ export default async function StudentLayout({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <NavBreadcrumb />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
             <NotificationBell userId={user.id} />
           </div>
         </header>

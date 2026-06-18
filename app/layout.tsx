@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/shared/theme-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,12 +22,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={cn("h-full antialiased", inter.variable)}>
+    <html lang="fr" className={cn("h-full antialiased", inter.variable)} suppressHydrationWarning>
       <body className={cn("min-h-full flex flex-col", inter.className)}>
-        <TooltipProvider delayDuration={0}>
-          {children}
-        </TooltipProvider>
-        <Toaster richColors position="top-right" />
+        <ThemeProvider>
+          <TooltipProvider delayDuration={0}>
+            {children}
+          </TooltipProvider>
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );
