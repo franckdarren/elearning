@@ -40,60 +40,69 @@ export async function upsertQuiz(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requireRole(["admin", "teacher", "manager"]);
+  try {
+    const user = await requireRole(["admin", "teacher", "manager"]);
 
-  const parsed = quizInputSchema.safeParse({
-    id: formData.get("id") || undefined,
-    classId: formData.get("classId"),
-    subjectId: formData.get("subjectId"),
-    chapterId: formData.get("chapterId") || undefined,
-    title: formData.get("title"),
-    description: formData.get("description"),
-    durationMinutes: formData.get("durationMinutes") || undefined,
-    maxAttempts: formData.get("maxAttempts") || 1,
-    opensAt: formData.get("opensAt") ?? "",
-    closesAt: formData.get("closesAt") ?? "",
-    status: formData.get("status") ?? "draft",
-  });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
-  }
-  const d = parsed.data;
-  await assertWriteScope(user, d.classId, d.subjectId);
+    const rawChapterId = formData.get("chapterId") as string | null;
+    const chapterId =
+      !rawChapterId || rawChapterId === "none" ? undefined : rawChapterId;
 
-  if (d.id) {
-    await db
-      .update(quizzes)
-      .set({
+    const parsed = quizInputSchema.safeParse({
+      id: formData.get("id") || undefined,
+      classId: formData.get("classId"),
+      subjectId: formData.get("subjectId"),
+      chapterId,
+      title: formData.get("title"),
+      description: formData.get("description"),
+      durationMinutes: formData.get("durationMinutes") || undefined,
+      maxAttempts: formData.get("maxAttempts") || 1,
+      opensAt: formData.get("opensAt") ?? "",
+      closesAt: formData.get("closesAt") ?? "",
+      status: formData.get("status") ?? "draft",
+    });
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
+    }
+    const d = parsed.data;
+    await assertWriteScope(user, d.classId, d.subjectId);
+
+    if (d.id) {
+      await db
+        .update(quizzes)
+        .set({
+          title: d.title,
+          description: d.description ?? null,
+          chapterId: d.chapterId ?? null,
+          durationMinutes: d.durationMinutes ?? null,
+          maxAttempts: d.maxAttempts,
+          opensAt: tsOrNull(d.opensAt),
+          closesAt: tsOrNull(d.closesAt),
+          status: d.status,
+        })
+        .where(eq(quizzes.id, d.id));
+    } else {
+      await db.insert(quizzes).values({
+        classId: d.classId,
+        subjectId: d.subjectId,
+        chapterId: d.chapterId ?? null,
         title: d.title,
         description: d.description ?? null,
-        chapterId: d.chapterId ?? null,
         durationMinutes: d.durationMinutes ?? null,
         maxAttempts: d.maxAttempts,
         opensAt: tsOrNull(d.opensAt),
         closesAt: tsOrNull(d.closesAt),
         status: d.status,
-      })
-      .where(eq(quizzes.id, d.id));
-  } else {
-    await db.insert(quizzes).values({
-      classId: d.classId,
-      subjectId: d.subjectId,
-      chapterId: d.chapterId ?? null,
-      title: d.title,
-      description: d.description ?? null,
-      durationMinutes: d.durationMinutes ?? null,
-      maxAttempts: d.maxAttempts,
-      opensAt: tsOrNull(d.opensAt),
-      closesAt: tsOrNull(d.closesAt),
-      status: d.status,
-      createdBy: user.id,
-    });
-  }
+        createdBy: user.id,
+      });
+    }
 
-  revalidatePath("/teacher/quizzes");
-  if (d.id) revalidatePath(`/teacher/quizzes/${d.id}/edit`);
-  return { success: d.id ? "Quiz mis à jour" : "Quiz créé" };
+    revalidatePath("/teacher/quizzes");
+    if (d.id) revalidatePath(`/teacher/quizzes/${d.id}/edit`);
+    return { success: d.id ? "Quiz mis à jour" : "Quiz créé" };
+  } catch (err) {
+    console.error("[upsertQuiz]", err);
+    return { error: "Erreur serveur, veuillez réessayer." };
+  }
 }
 
 export async function deleteQuiz(formData: FormData) {

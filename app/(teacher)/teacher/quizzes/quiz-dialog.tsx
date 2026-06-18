@@ -74,6 +74,8 @@ export function QuizDialog({ trigger, assignments, chapters, quiz }: Props) {
     if (state?.success) {
       toast.success(state.success);
       setOpen(false);
+    } else if (state?.error) {
+      toast.error(state.error);
     }
   }, [state]);
 
@@ -138,14 +140,14 @@ export function QuizDialog({ trigger, assignments, chapters, quiz }: Props) {
             <Label htmlFor="chapterId">Chapitre associé (optionnel)</Label>
             <Select
               name="chapterId"
-              defaultValue={quiz?.chapterId ?? ""}
+              defaultValue={quiz?.chapterId ?? "none"}
               disabled={!scope}
             >
               <SelectTrigger id="chapterId">
                 <SelectValue placeholder="(Aucun)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">(Aucun)</SelectItem>
+                <SelectItem value="none">(Aucun)</SelectItem>
                 {filteredChapters.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.title}
