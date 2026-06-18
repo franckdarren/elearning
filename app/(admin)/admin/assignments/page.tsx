@@ -213,6 +213,7 @@ export default async function AssignmentsPage() {
                             title="Retirer cette affectation ?"
                             confirmLabel="Retirer"
                             destructive
+                            successMessage="Affectation retirée"
                             action={async (formData: FormData) => {
                               "use server";
                               formData.set("id", a.id);

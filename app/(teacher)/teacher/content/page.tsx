@@ -186,6 +186,7 @@ export default async function TeacherContentPage({
                       description="Toutes les séquences et ressources rattachées seront supprimées."
                       confirmLabel="Supprimer"
                       destructive
+                      successMessage={`Chapitre "${c.title}" supprimé`}
                       action={async (formData: FormData) => {
                         "use server";
                         formData.set("id", c.id);

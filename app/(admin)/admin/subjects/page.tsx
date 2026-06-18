@@ -92,6 +92,7 @@ export default async function SubjectsPage() {
                           description="Cette action supprimera la matière et désassociera toutes les classes. Les chapitres et ressources liés seront supprimés."
                           confirmLabel="Supprimer"
                           destructive
+                          successMessage={`Matière ${s.name} supprimée`}
                           action={async (formData: FormData) => {
                             "use server";
                             formData.set("id", s.id);

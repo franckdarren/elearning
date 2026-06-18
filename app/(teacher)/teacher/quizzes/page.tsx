@@ -220,6 +220,7 @@ export default async function TeacherQuizzesPage() {
                           description="Les questions, options, tentatives et réponses associées seront supprimées."
                           confirmLabel="Supprimer"
                           destructive
+                          successMessage={`QCM "${q.title}" supprimé`}
                           action={async (formData: FormData) => {
                             "use server";
                             formData.set("id", q.id);

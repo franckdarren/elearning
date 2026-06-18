@@ -133,6 +133,7 @@ export default async function ClassesPage() {
                           description="Les inscriptions, accès, chapitres et quiz de cette classe seront supprimés."
                           confirmLabel="Supprimer"
                           destructive
+                          successMessage={`Classe ${c.name} supprimée`}
                           action={async (formData: FormData) => {
                             "use server";
                             formData.set("id", c.id);

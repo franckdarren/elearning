@@ -97,6 +97,7 @@ export default async function SettingsPage() {
                           description="Les classes rattachées à cette année perdront leur rattachement."
                           confirmLabel="Supprimer"
                           destructive
+                          successMessage={`Année ${y.label} supprimée`}
                           action={async (formData: FormData) => {
                             "use server";
                             formData.set("id", y.id);
