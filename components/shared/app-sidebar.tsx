@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
 import {
   BarChart2,
   BookOpen,
@@ -11,6 +12,7 @@ import {
   FolderOpen,
   GraduationCap,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Settings,
   Trophy,
@@ -98,7 +100,20 @@ export function AppSidebar({
   user: { id: string; fullName: string | null; email: string; role: UserRole };
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const navItems = NAV_BY_ROLE[user.role] ?? [];
+
+  useEffect(() => {
+    if (!isPending) setPendingUrl(null);
+  }, [isPending]);
+
+  function navigate(url: string) {
+    if (url === pathname) return;
+    setPendingUrl(url);
+    startTransition(() => router.push(url));
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -126,13 +141,21 @@ export function AppSidebar({
             <SidebarMenu>
               {navItems.map(({ title, url, icon: Icon }) => {
                 const active = pathname === url || pathname.startsWith(url + "/");
+                const loading = isPending && pendingUrl === url;
+                const isActive = active || (!isPending ? false : pendingUrl === url);
                 return (
                   <SidebarMenuItem key={url}>
-                    <SidebarMenuButton asChild isActive={active} tooltip={title}>
-                      <Link href={url}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      tooltip={title}
+                      onClick={() => navigate(url)}
+                    >
+                      {loading ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
                         <Icon />
-                        <span>{title}</span>
-                      </Link>
+                      )}
+                      <span>{title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
