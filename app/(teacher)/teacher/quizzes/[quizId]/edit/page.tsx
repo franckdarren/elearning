@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Eye } from "lucide-react";
 import { db } from "@/lib/db";
 import {
   quizzes,
@@ -129,6 +130,12 @@ export default async function QuizEditPage({
             >
               {STATUS_LABEL[quiz.status]}
             </Badge>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/teacher/quizzes/${quizId}/preview`}>
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+                Prévisualiser
+              </Link>
+            </Button>
             <QuizDialog
               assignments={assignments}
               chapters={chaptersList}
