@@ -87,142 +87,144 @@ export function QuizDialog({ trigger, assignments, chapters, quiz }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex flex-col gap-0 p-0 sm:max-w-lg max-h-[90vh]">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle>{quiz ? "Modifier le quiz" : "Nouveau quiz"}</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="space-y-4">
-          {quiz ? <input type="hidden" name="id" value={quiz.id} /> : null}
-          <input type="hidden" name="classId" value={classId} />
-          <input type="hidden" name="subjectId" value={subjectId} />
+        <form action={formAction} className="flex flex-col flex-1 min-h-0">
+          <div className="overflow-y-auto flex-1 px-6 space-y-4">
+            {quiz ? <input type="hidden" name="id" value={quiz.id} /> : null}
+            <input type="hidden" name="classId" value={classId} />
+            <input type="hidden" name="subjectId" value={subjectId} />
 
-          <div className="space-y-2">
-            <Label>Périmètre</Label>
-            <Select value={scope} onValueChange={setScope}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner classe + matière" />
-              </SelectTrigger>
-              <SelectContent>
-                {assignments.map((a) => (
-                  <SelectItem
-                    key={`${a.classId}:${a.subjectId}`}
-                    value={`${a.classId}:${a.subjectId}`}
-                  >
-                    {a.className} — {a.subjectName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="title">Titre</Label>
-            <Input
-              id="title"
-              name="title"
-              required
-              maxLength={200}
-              defaultValue={quiz?.title ?? ""}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              name="description"
-              maxLength={2000}
-              defaultValue={quiz?.description ?? ""}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="chapterId">Chapitre associé (optionnel)</Label>
-            <Select
-              name="chapterId"
-              defaultValue={quiz?.chapterId ?? "none"}
-              disabled={!scope}
-            >
-              <SelectTrigger id="chapterId">
-                <SelectValue placeholder="(Aucun)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">(Aucun)</SelectItem>
-                {filteredChapters.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="durationMinutes">Durée (min)</Label>
+              <Label>Périmètre</Label>
+              <Select value={scope} onValueChange={setScope}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner classe + matière" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignments.map((a) => (
+                    <SelectItem
+                      key={`${a.classId}:${a.subjectId}`}
+                      value={`${a.classId}:${a.subjectId}`}
+                    >
+                      {a.className} — {a.subjectName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre</Label>
               <Input
-                id="durationMinutes"
-                name="durationMinutes"
-                type="number"
-                min={0}
-                defaultValue={quiz?.durationMinutes ?? ""}
+                id="title"
+                name="title"
+                required
+                maxLength={200}
+                defaultValue={quiz?.title ?? ""}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="maxAttempts">Tentatives</Label>
-              <Input
-                id="maxAttempts"
-                name="maxAttempts"
-                type="number"
-                min={1}
-                defaultValue={quiz?.maxAttempts ?? 1}
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="opensAt">Ouverture</Label>
+              <Label htmlFor="description">Description</Label>
               <Input
-                id="opensAt"
-                name="opensAt"
-                type="datetime-local"
-                defaultValue={toLocalInput(quiz?.opensAt ?? null)}
+                id="description"
+                name="description"
+                maxLength={2000}
+                defaultValue={quiz?.description ?? ""}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="closesAt">Fermeture</Label>
-              <Input
-                id="closesAt"
-                name="closesAt"
-                type="datetime-local"
-                defaultValue={toLocalInput(quiz?.closesAt ?? null)}
-              />
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="status">Statut</Label>
-            <Select name="status" defaultValue={quiz?.status ?? "draft"}>
-              <SelectTrigger id="status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Brouillon</SelectItem>
-                <SelectItem value="scheduled">Programmé</SelectItem>
-                <SelectItem value="published">Publié</SelectItem>
-                <SelectItem value="archived">Archivé</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label htmlFor="chapterId">Chapitre associé (optionnel)</Label>
+              <Select
+                name="chapterId"
+                defaultValue={quiz?.chapterId ?? "none"}
+                disabled={!scope}
+              >
+                <SelectTrigger id="chapterId">
+                  <SelectValue placeholder="(Aucun)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">(Aucun)</SelectItem>
+                  {filteredChapters.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="durationMinutes">Durée (min)</Label>
+                <Input
+                  id="durationMinutes"
+                  name="durationMinutes"
+                  type="number"
+                  min={0}
+                  defaultValue={quiz?.durationMinutes ?? ""}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="maxAttempts">Tentatives</Label>
+                <Input
+                  id="maxAttempts"
+                  name="maxAttempts"
+                  type="number"
+                  min={1}
+                  defaultValue={quiz?.maxAttempts ?? 1}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="opensAt">Ouverture</Label>
+                <Input
+                  id="opensAt"
+                  name="opensAt"
+                  type="datetime-local"
+                  defaultValue={toLocalInput(quiz?.opensAt ?? null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="closesAt">Fermeture</Label>
+                <Input
+                  id="closesAt"
+                  name="closesAt"
+                  type="datetime-local"
+                  defaultValue={toLocalInput(quiz?.closesAt ?? null)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 pb-4">
+              <Label htmlFor="status">Statut</Label>
+              <Select name="status" defaultValue={quiz?.status ?? "draft"}>
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Brouillon</SelectItem>
+                  <SelectItem value="scheduled">Programmé</SelectItem>
+                  <SelectItem value="published">Publié</SelectItem>
+                  <SelectItem value="archived">Archivé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {state?.error ? (
-            <p className="text-sm text-red-600" role="alert">
+            <p className="px-6 py-2 text-sm text-red-600" role="alert">
               {state.error}
             </p>
           ) : null}
 
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t">
             <Button
               type="button"
               variant="ghost"
