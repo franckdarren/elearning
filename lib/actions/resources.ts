@@ -119,9 +119,8 @@ export async function createVideoResource(
   try {
     await videoProvider.upload(file, videoPath);
   } catch (e) {
-    return {
-      error: `Échec du stockage vidéo : ${e instanceof Error ? e.message : String(e)}`,
-    };
+    console.error("[createVideoResource] storage upload failed:", e);
+    return { error: "Impossible de sauvegarder la vidéo. Veuillez réessayer." };
   }
 
   let thumbnailPath: string | null = null;
@@ -131,7 +130,10 @@ export async function createVideoResource(
     const { error } = await supabase.storage
       .from(THUMB_BUCKET)
       .upload(thumbnailPath, thumb, { contentType: thumb.type, upsert: false });
-    if (error) return { error: `Miniature : ${error.message}` };
+    if (error) {
+      console.error("[createVideoResource] thumbnail upload failed:", error);
+      return { error: "Impossible de sauvegarder la miniature. Veuillez réessayer." };
+    }
   }
 
   const publishedAt = nullableTimestamp(data.publishedAt);
@@ -156,9 +158,8 @@ export async function createVideoResource(
       createdBy: user.id,
     });
   } catch (e) {
-    return {
-      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
-    };
+    console.error("[createVideoResource] db insert failed:", e);
+    return { error: "Une erreur serveur s'est produite. Veuillez réessayer." };
   }
 
   revalidatePath(`/teacher/content/${data.chapterId}`);
@@ -225,9 +226,8 @@ export async function createVideoResourceRecord(
       createdBy: user.id,
     });
   } catch (e) {
-    return {
-      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
-    };
+    console.error("[createVideoResourceRecord] db insert failed:", e);
+    return { error: "Une erreur serveur s'est produite. Veuillez réessayer." };
   }
 
   revalidatePath(`/teacher/content/${data.chapterId}`);
@@ -281,9 +281,8 @@ export async function createDocumentResource(
   try {
     await documentProvider.upload(file, documentPath);
   } catch (e) {
-    return {
-      error: `Échec du stockage document : ${e instanceof Error ? e.message : String(e)}`,
-    };
+    console.error("[createDocumentResource] storage upload failed:", e);
+    return { error: "Impossible de sauvegarder le document. Veuillez réessayer." };
   }
 
   const publishedAt = nullableTimestamp(data.publishedAt);
@@ -306,9 +305,8 @@ export async function createDocumentResource(
       createdBy: user.id,
     });
   } catch (e) {
-    return {
-      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
-    };
+    console.error("[createDocumentResource] db insert failed:", e);
+    return { error: "Une erreur serveur s'est produite. Veuillez réessayer." };
   }
 
   revalidatePath(`/teacher/content/${data.chapterId}`);
@@ -371,9 +369,8 @@ export async function createDocumentResourceRecord(
       createdBy: user.id,
     });
   } catch (e) {
-    return {
-      error: `Erreur base de données : ${e instanceof Error ? e.message : String(e)}`,
-    };
+    console.error("[createDocumentResourceRecord] db insert failed:", e);
+    return { error: "Une erreur serveur s'est produite. Veuillez réessayer." };
   }
 
   revalidatePath(`/teacher/content/${data.chapterId}`);

@@ -46,7 +46,8 @@ export async function getVideoSignedUploadUrl(
     .createSignedUploadUrl(path);
 
   if (supaErr || !data) {
-    return { ok: false, error: supaErr?.message ?? "Impossible de créer l'URL d'upload" };
+    console.error("[getVideoSignedUploadUrl] failed:", supaErr);
+    return { ok: false, error: "Impossible de créer l'URL d'upload. Veuillez réessayer." };
   }
   return { ok: true, signedUrl: data.signedUrl, path };
 }
@@ -65,7 +66,8 @@ export async function getDocumentSignedUploadUrl(
     .createSignedUploadUrl(path);
 
   if (supaErr || !data) {
-    return { ok: false, error: supaErr?.message ?? "Impossible de créer l'URL d'upload" };
+    console.error("[getDocumentSignedUploadUrl] failed:", supaErr);
+    return { ok: false, error: "Impossible de créer l'URL d'upload. Veuillez réessayer." };
   }
   return { ok: true, signedUrl: data.signedUrl, path };
 }
@@ -84,7 +86,8 @@ export async function getThumbnailSignedUploadUrl(
     .createSignedUploadUrl(path);
 
   if (supaErr || !data) {
-    return { ok: false, error: supaErr?.message ?? "Impossible de créer l'URL d'upload" };
+    console.error("[getThumbnailSignedUploadUrl] failed:", supaErr);
+    return { ok: false, error: "Impossible de créer l'URL d'upload. Veuillez réessayer." };
   }
   return { ok: true, signedUrl: data.signedUrl, path };
 }
