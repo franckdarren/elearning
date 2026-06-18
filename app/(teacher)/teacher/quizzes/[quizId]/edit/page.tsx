@@ -174,6 +174,8 @@ export default async function QuizEditPage({
                   position: r.question_options.position,
                 }))}
                 index={idx}
+                isFirst={idx === 0}
+                isLast={idx === questionRows.length - 1}
               />
             ))
           )}

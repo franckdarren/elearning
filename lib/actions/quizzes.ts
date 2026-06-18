@@ -206,6 +206,44 @@ export async function deleteQuestion(formData: FormData) {
   revalidatePath(`/teacher/quizzes/${quizId}/edit`);
 }
 
+export async function moveQuestion(formData: FormData) {
+  const user = await requireRole(["admin", "teacher", "manager"]);
+  const id = String(formData.get("id") ?? "");
+  const quizId = String(formData.get("quizId") ?? "");
+  const direction = String(formData.get("direction") ?? "");
+  if (!id || !quizId || (direction !== "up" && direction !== "down")) return;
+
+  const s = await quizScopeById(quizId);
+  if (!s) return;
+  await assertWriteScope(user, s.classId, s.subjectId);
+
+  const allQuestions = await db
+    .select({ id: questions.id, position: questions.position })
+    .from(questions)
+    .where(eq(questions.quizId, quizId))
+    .orderBy(questions.position);
+
+  const idx = allQuestions.findIndex((q) => q.id === id);
+  if (idx === -1) return;
+
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= allQuestions.length) return;
+
+  const current = allQuestions[idx];
+  const neighbor = allQuestions[swapIdx];
+
+  await db
+    .update(questions)
+    .set({ position: neighbor.position })
+    .where(eq(questions.id, current.id));
+  await db
+    .update(questions)
+    .set({ position: current.position })
+    .where(eq(questions.id, neighbor.id));
+
+  revalidatePath(`/teacher/quizzes/${quizId}/edit`);
+}
+
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------

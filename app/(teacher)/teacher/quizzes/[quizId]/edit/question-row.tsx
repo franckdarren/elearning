@@ -1,15 +1,17 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import {
   addOption,
   deleteOption,
   deleteQuestion,
+  moveQuestion,
   updateOption,
   updateQuestion,
 } from "@/lib/actions/quizzes";
@@ -40,28 +42,37 @@ export function QuestionRow({
   question,
   options,
   index,
+  isFirst,
+  isLast,
 }: {
   quizId: string;
   question: Question;
   options: Option[];
   index: number;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   function run(
     action: (fd: FormData) => Promise<void>,
     build: (fd: FormData) => void,
     successMsg: string,
     errorMsg: string,
+    actionKey: string,
   ) {
     const fd = new FormData();
     build(fd);
+    setPendingAction(actionKey);
     startTransition(async () => {
       try {
         await action(fd);
         toast.success(successMsg);
       } catch {
         toast.error(errorMsg);
+      } finally {
+        setPendingAction(null);
       }
     });
   }
@@ -80,6 +91,7 @@ export function QuestionRow({
       },
       "Question enregistrée",
       "Erreur lors de l'enregistrement",
+      "save-question",
     );
   }
 
@@ -92,6 +104,21 @@ export function QuestionRow({
       },
       "Question supprimée",
       "Erreur lors de la suppression",
+      "delete-question",
+    );
+  }
+
+  function handleMove(direction: "up" | "down") {
+    run(
+      moveQuestion,
+      (fd) => {
+        fd.set("id", question.id);
+        fd.set("quizId", quizId);
+        fd.set("direction", direction);
+      },
+      direction === "up" ? "Question déplacée vers le haut" : "Question déplacée vers le bas",
+      "Erreur lors du déplacement",
+      `move-${direction}`,
     );
   }
 
@@ -109,6 +136,7 @@ export function QuestionRow({
       },
       "Option enregistrée",
       "Erreur lors de l'enregistrement de l'option",
+      `update-option-${optionId}`,
     );
   }
 
@@ -121,6 +149,7 @@ export function QuestionRow({
       },
       "Option supprimée",
       "Erreur lors de la suppression de l'option",
+      `delete-option-${optionId}`,
     );
   }
 
@@ -133,6 +162,7 @@ export function QuestionRow({
       },
       "Option ajoutée",
       "Erreur lors de l'ajout de l'option",
+      "add-option",
     );
   }
 
@@ -140,6 +170,38 @@ export function QuestionRow({
     <div className="space-y-3 rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
+          <div className="flex flex-col">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              disabled={pending || isFirst}
+              onClick={() => handleMove("up")}
+              aria-label="Déplacer vers le haut"
+            >
+              {pendingAction === "move-up" ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <ChevronUp className="h-3 w-3" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              disabled={pending || isLast}
+              onClick={() => handleMove("down")}
+              aria-label="Déplacer vers le bas"
+            >
+              {pendingAction === "move-down" ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
           <span className="text-sm font-semibold">Q{index + 1}</span>
           <Badge variant="outline">{TYPE_LABEL[question.type]}</Badge>
         </div>
@@ -151,6 +213,9 @@ export function QuestionRow({
           disabled={pending}
           onClick={handleDeleteQuestion}
         >
+          {pendingAction === "delete-question" ? (
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          ) : null}
           Supprimer la question
         </Button>
       </div>
@@ -185,6 +250,9 @@ export function QuestionRow({
         </div>
         <div className="flex items-end">
           <Button type="submit" variant="outline" size="sm" className="w-full" disabled={pending}>
+            {pendingAction === "save-question" ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : null}
             Enregistrer
           </Button>
         </div>
@@ -225,7 +293,11 @@ export function QuestionRow({
                     size="sm"
                     disabled={pending}
                   >
-                    OK
+                    {pendingAction === `update-option-${o.id}` ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      "OK"
+                    )}
                   </Button>
                   {question.type !== "true_false" ? (
                     <Button
@@ -236,7 +308,11 @@ export function QuestionRow({
                       disabled={pending}
                       onClick={() => handleDeleteOption(o.id)}
                     >
-                      ×
+                      {pendingAction === `delete-option-${o.id}` ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        "×"
+                      )}
                     </Button>
                   ) : null}
                 </form>
@@ -252,6 +328,9 @@ export function QuestionRow({
             disabled={pending}
             onClick={handleAddOption}
           >
+            {pendingAction === "add-option" ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : null}
             + Ajouter une option
           </Button>
         ) : null}
