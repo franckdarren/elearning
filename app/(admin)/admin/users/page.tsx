@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
-import { and, eq, ilike, or, sql, desc, count } from "drizzle-orm";
+import { and, eq, ilike, or, desc, count } from "drizzle-orm";
 import {
   Card,
   CardContent,
@@ -16,18 +17,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { CreateUserDialog } from "./create-user-dialog";
 import { EditUserDialog } from "./edit-user-dialog";
 import { ToggleActiveButton } from "./toggle-active-button";
+import { UsersFilter } from "./users-filter";
 
 export const metadata = { title: "Admin · Utilisateurs" };
 export const dynamic = "force-dynamic";
@@ -100,39 +93,9 @@ export default async function UsersPage({
           <CardTitle>Filtres</CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-wrap items-end gap-3" method="get">
-            <div className="flex-1 min-w-[200px] space-y-2">
-              <label htmlFor="q" className="text-xs font-medium">
-                Recherche
-              </label>
-              <Input
-                id="q"
-                name="q"
-                defaultValue={q}
-                placeholder="Email, prénom ou nom…"
-              />
-            </div>
-            <div className="w-48 space-y-2">
-              <label htmlFor="role" className="text-xs font-medium">
-                Rôle
-              </label>
-              <Select name="role" defaultValue={sp.role ?? "all"}>
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="manager">Gestionnaire</SelectItem>
-                  <SelectItem value="teacher">Enseignant</SelectItem>
-                  <SelectItem value="student">Élève</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" variant="outline">
-              Filtrer
-            </Button>
-          </form>
+          <Suspense>
+            <UsersFilter q={q} role={sp.role ?? "all"} />
+          </Suspense>
         </CardContent>
       </Card>
 

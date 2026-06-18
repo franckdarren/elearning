@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { toggleUserActive } from "@/lib/actions/users";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,11 @@ export function ToggleActiveButton({
       disabled={pending}
       onClick={handleClick}
     >
-      {isActive ? "Désactiver" : "Réactiver"}
+      {pending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        isActive ? "Désactiver" : "Réactiver"
+      )}
     </Button>
   );
 }
