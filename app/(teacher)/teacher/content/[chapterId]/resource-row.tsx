@@ -65,13 +65,13 @@ export function ResourceRow({ r }: ResourceRowProps) {
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 text-sm">
-      <Badge variant="outline" className="w-24 justify-center text-xs">
+    <div className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
+      <Badge variant="outline" className="w-20 shrink-0 justify-center text-xs">
         {r.type === "video" ? "Vidéo" : "Document"}
       </Badge>
-      <span className="flex-1">{r.title}</span>
+      <span className="min-w-0 flex-1 truncate">{r.title}</span>
       <StatusBadge status={r.status} />
-      <div className="flex gap-1">
+      <div className="flex shrink-0 gap-1">
         <Button
           type="button"
           variant="ghost"

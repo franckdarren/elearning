@@ -117,9 +117,9 @@ export default async function StudentSubjectPage({
               .map((c) => (
                 <Link key={c.id} href={`/student/chapter/${c.id}`}>
                   <Card className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                    <CardContent className="flex items-center justify-between p-4">
-                      <span className="font-medium">{c.title}</span>
-                      <Badge variant="outline">
+                    <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
+                      <span className="min-w-0 flex-1 font-medium">{c.title}</span>
+                      <Badge variant="outline" className="shrink-0">
                         {c.resourceCount} ressource
                         {c.resourceCount > 1 ? "s" : ""}
                       </Badge>

@@ -127,7 +127,7 @@ export default async function ChapterDetailPage({
 
       {seqRows.map((s) => (
         <Card key={s.id}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
             <CardTitle>{s.title}</CardTitle>
             <div className="flex gap-1">
               <SequenceDialog

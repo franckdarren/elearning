@@ -116,7 +116,7 @@ export default async function QuizEditPage({
             ← Liste des QCM
           </Link>
         </div>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">{quiz.title}</h1>
             <p className="text-sm text-zinc-500">
@@ -144,7 +144,7 @@ export default async function QuizEditPage({
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
           <CardTitle>
             {questionRows.length} question{questionRows.length > 1 ? "s" : ""}
           </CardTitle>

@@ -124,20 +124,20 @@ export default async function TeacherContentPage({
                   key={c.id}
                   className="flex items-center gap-3 px-4 py-3"
                 >
-                  <span className="w-6 text-right text-xs text-zinc-400">
+                  <span className="w-6 shrink-0 text-right text-xs text-zinc-400">
                     {idx + 1}
                   </span>
                   <Link
                     href={`/teacher/content/${c.id}`}
-                    className="flex-1 font-medium hover:underline"
+                    className="min-w-0 flex-1 truncate font-medium hover:underline"
                   >
                     {c.title}
                   </Link>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="shrink-0">
                     {c.resourceCount} ressource
                     {c.resourceCount > 1 ? "s" : ""}
                   </Badge>
-                  <div className="flex gap-1">
+                  <div className="flex shrink-0 flex-wrap gap-1">
                     <form action={moveChapter}>
                       <input type="hidden" name="id" value={c.id} />
                       <input type="hidden" name="direction" value="up" />
