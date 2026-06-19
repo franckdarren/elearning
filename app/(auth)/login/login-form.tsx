@@ -30,6 +30,9 @@ export function LoginForm() {
           name="email"
           type="email"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
           placeholder="vous@exemple.fr"
         />

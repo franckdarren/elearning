@@ -120,11 +120,22 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Supprime le flash bleu au tap sur iOS/Android */
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground;
+    /* Espace pour la barre de navigation iPhone (safe area) */
+    padding-bottom: env(safe-area-inset-bottom);
   }
   html {
     @apply font-sans;
+  }
+  /* Supprime le délai 300 ms au tap sur les éléments interactifs */
+  a,
+  button,
+  [role="button"],
+  select {
+    touch-action: manipulation;
   }
 }

@@ -21,8 +21,11 @@ export default async function AdminLayout({
     <SidebarProvider>
       <AppSidebar user={user} />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
+        <header
+          aria-label="Navigation principale"
+          className="flex h-14 shrink-0 items-center gap-2 border-b px-4"
+        >
+          <SidebarTrigger className="-ml-1" aria-label="Ouvrir/fermer le menu" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <NavBreadcrumb />
           <div className="ml-auto flex items-center gap-1">

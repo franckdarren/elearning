@@ -30,6 +30,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -105,6 +106,7 @@ export function AppSidebar({
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const navItems = NAV_BY_ROLE[user.role] ?? [];
+  const { isMobile, setOpenMobile } = useSidebar();
 
   useEffect(() => {
     if (!isPending) setPendingUrl(null);
@@ -112,6 +114,7 @@ export function AppSidebar({
 
   function navigate(url: string) {
     if (url === pathname) return;
+    if (isMobile) setOpenMobile(false);
     setPendingUrl(url);
     startTransition(() => router.push(url));
   }

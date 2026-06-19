@@ -110,7 +110,16 @@ export function NotificationBell({ userId }: { userId: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label={
+            unread > 0
+              ? `Notifications (${unread} non ${unread === 1 ? "lue" : "lues"})`
+              : "Notifications"
+          }
+        >
           <Bell className="h-4 w-4" />
           {unread > 0 ? (
             <Badge
@@ -122,7 +131,10 @@ export function NotificationBell({ userId }: { userId: string }) {
           ) : null}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80" align="end">
+      <DropdownMenuContent
+        className="w-[min(20rem,calc(100vw-1.5rem))]"
+        align="end"
+      >
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notifications</span>
           {unread > 0 ? (

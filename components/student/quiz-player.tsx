@@ -193,13 +193,19 @@ export function QuizPlayer({
                 const inputType = q.type === "multiple" ? "checkbox" : "radio";
                 return (
                   <li key={o.id}>
-                    <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                    <label
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 transition-colors ${
+                        selected
+                          ? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50"
+                          : "border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                      }`}
+                    >
                       <input
                         type={inputType}
                         name={q.id}
                         checked={selected}
                         onChange={() => toggle(q.id, o.id, q.type)}
-                        className="h-4 w-4"
+                        className="h-4 w-4 shrink-0"
                       />
                       {o.text}
                     </label>
