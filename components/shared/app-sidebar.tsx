@@ -102,21 +102,21 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const navItems = NAV_BY_ROLE[user.role] ?? [];
   const { isMobile, setOpenMobile } = useSidebar();
 
   useEffect(() => {
-    if (!isPending) setPendingUrl(null);
-  }, [isPending]);
+    setPendingUrl(null);
+  }, [pathname]);
 
   function navigate(url: string) {
     if (url === pathname) return;
     if (isMobile) setOpenMobile(false);
     setPendingUrl(url);
-    startTransition(() => router.push(url));
+    router.push(url);
   }
 
   return (
@@ -145,8 +145,8 @@ export function AppSidebar({
             <SidebarMenu>
               {navItems.map(({ title, url, icon: Icon }) => {
                 const active = pathname === url || pathname.startsWith(url + "/");
-                const loading = isPending && pendingUrl === url;
-                const isActive = active || (!isPending ? false : pendingUrl === url);
+                const loading = pendingUrl === url;
+                const isActive = active || loading;
                 return (
                   <SidebarMenuItem key={url}>
                     <SidebarMenuButton
