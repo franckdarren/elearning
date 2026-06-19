@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 import {
   BarChart2,
   BookOpen,
+  Building2,
   Calendar,
   ChevronsUpDown,
   ClipboardList,
@@ -53,6 +54,7 @@ type NavItem = {
 const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   admin: [
     { title: "Tableau de bord", url: "/admin/dashboard", icon: LayoutDashboard },
+    { title: "Établissements", url: "/admin/establishments", icon: Building2 },
     { title: "Utilisateurs", url: "/admin/users", icon: Users },
     { title: "Classes", url: "/admin/classes", icon: GraduationCap },
     { title: "Matières", url: "/admin/subjects", icon: BookOpen },
