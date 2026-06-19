@@ -9,7 +9,7 @@ export default function StudentDashboardLoading() {
   return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
-      <KpiCardsSkeleton count={3} kpiGridClass="sm:grid-cols-3" />
+      <KpiCardsSkeleton count={3} gridClass="sm:grid-cols-3" />
 
       {/* Progression par matière */}
       <Card>
