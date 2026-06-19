@@ -122,22 +122,27 @@ export default async function TeacherContentPage({
               {chaptersRows.map((c, idx) => (
                 <li
                   key={c.id}
-                  className="flex items-center gap-3 px-4 py-3"
+                  className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
                 >
-                  <span className="w-6 shrink-0 text-right text-xs text-zinc-400">
-                    {idx + 1}
-                  </span>
-                  <Link
-                    href={`/teacher/content/${c.id}`}
-                    className="min-w-0 flex-1 truncate font-medium hover:underline"
-                  >
-                    {c.title}
-                  </Link>
-                  <Badge variant="outline" className="shrink-0">
-                    {c.resourceCount} ressource
-                    {c.resourceCount > 1 ? "s" : ""}
-                  </Badge>
-                  <div className="flex shrink-0 flex-wrap gap-1">
+                  {/* Ligne 1 : numéro + titre + badge */}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="w-6 shrink-0 text-right text-xs text-zinc-400">
+                      {idx + 1}
+                    </span>
+                    <Link
+                      href={`/teacher/content/${c.id}`}
+                      className="min-w-0 flex-1 truncate font-medium hover:underline"
+                    >
+                      {c.title}
+                    </Link>
+                    <Badge variant="outline" className="shrink-0">
+                      {c.resourceCount} ressource
+                      {c.resourceCount > 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+
+                  {/* Ligne 2 (mobile) / suite (desktop) : actions */}
+                  <div className="flex shrink-0 flex-wrap gap-1 sm:ml-auto">
                     <form action={moveChapter}>
                       <input type="hidden" name="id" value={c.id} />
                       <input type="hidden" name="direction" value="up" />

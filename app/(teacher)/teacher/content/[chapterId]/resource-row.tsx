@@ -5,6 +5,13 @@ import { toast } from "sonner";
 import { deleteResource, moveResource } from "@/lib/actions/resources";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { StatusDialog } from "./status-dialog";
 import { ResourcePreviewDialog } from "./resource-preview-dialog";
@@ -65,13 +72,15 @@ export function ResourceRow({ r }: ResourceRowProps) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
+    <div className="flex items-center gap-2 px-4 py-2 text-sm">
       <Badge variant="outline" className="w-20 shrink-0 justify-center text-xs">
         {r.type === "video" ? "Vidéo" : "Document"}
       </Badge>
       <span className="min-w-0 flex-1 truncate">{r.title}</span>
       <StatusBadge status={r.status} />
-      <div className="flex shrink-0 gap-1">
+
+      {/* Actions desktop */}
+      <div className="hidden shrink-0 gap-1 sm:flex">
         <Button
           type="button"
           variant="ghost"
@@ -112,6 +121,59 @@ export function ResourceRow({ r }: ResourceRowProps) {
           destructive
           action={handleDelete}
         />
+      </div>
+
+      {/* Actions mobile — menu ⋯ */}
+      <div className="shrink-0 sm:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              ⋯
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              disabled={movePending}
+              onSelect={() => handleMove("up")}
+            >
+              ↑ Monter
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={movePending}
+              onSelect={() => handleMove("down")}
+            >
+              ↓ Descendre
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <ResourcePreviewDialog resourceId={r.id} asMenuItem />
+            <StatusDialog
+              resource={{
+                id: r.id,
+                title: r.title,
+                status: r.status,
+                publishedAt: r.publishedAt,
+                unpublishAt: r.unpublishAt,
+              }}
+              asMenuItem
+            />
+            <DropdownMenuSeparator />
+            <ConfirmDialog
+              trigger={
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  Supprimer
+                </DropdownMenuItem>
+              }
+              title={`Supprimer ${r.title} ?`}
+              description="Le fichier sera supprimé du stockage et la ressource retirée du chapitre."
+              confirmLabel="Supprimer"
+              destructive
+              action={handleDelete}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
