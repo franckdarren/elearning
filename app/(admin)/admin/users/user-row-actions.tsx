@@ -47,49 +47,41 @@ export function UserRowActions({ user, establishments }: Props) {
   }
 
   return (
-    <>
-      <div className="hidden sm:flex justify-end gap-1">
-        <EditUserDialog user={user} establishments={establishments} />
-        <ToggleActiveButton id={user.id} isActive={user.isActive} />
-        <DeleteUserButton id={user.id} name={fullName} />
-      </div>
-
-      <div className="flex sm:hidden justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <EditUserDialog
-              user={user}
-              establishments={establishments}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  Modifier
-                </DropdownMenuItem>
-              }
-            />
-            <DropdownMenuItem onSelect={handleToggle} disabled={togglePending}>
-              {user.isActive ? "Désactiver" : "Réactiver"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DeleteUserButton
-              id={user.id}
-              name={fullName}
-              trigger={
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  Supprimer
-                </DropdownMenuItem>
-              }
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </>
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <EditUserDialog
+            user={user}
+            establishments={establishments}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Modifier
+              </DropdownMenuItem>
+            }
+          />
+          <DropdownMenuItem onSelect={handleToggle} disabled={togglePending}>
+            {user.isActive ? "Désactiver" : "Réactiver"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DeleteUserButton
+            id={user.id}
+            name={fullName}
+            trigger={
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="text-red-600 focus:text-red-600"
+              >
+                Supprimer
+              </DropdownMenuItem>
+            }
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

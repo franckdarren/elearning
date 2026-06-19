@@ -30,63 +30,41 @@ export function YearRowActions({ year }: Props) {
   }
 
   return (
-    <>
-      <div className="hidden sm:flex justify-end gap-1">
-        <YearDialog
-          year={year}
-          trigger={<Button variant="ghost" size="sm">Modifier</Button>}
-        />
-        <ConfirmDialog
-          trigger={
-            <Button variant="ghost" size="sm" className="text-red-600">
-              Supprimer
-            </Button>
-          }
-          title={`Supprimer ${year.label} ?`}
-          description="Les classes rattachées à cette année perdront leur rattachement."
-          confirmLabel="Supprimer"
-          destructive
-          successMessage={`Année ${year.label} supprimée`}
-          action={handleDelete}
-        />
-      </div>
-
-      <div className="flex sm:hidden justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <YearDialog
-              year={year}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  Modifier
-                </DropdownMenuItem>
-              }
-            />
-            <DropdownMenuSeparator />
-            <ConfirmDialog
-              trigger={
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  Supprimer
-                </DropdownMenuItem>
-              }
-              title={`Supprimer ${year.label} ?`}
-              description="Les classes rattachées à cette année perdront leur rattachement."
-              confirmLabel="Supprimer"
-              destructive
-              successMessage={`Année ${year.label} supprimée`}
-              action={handleDelete}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </>
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <YearDialog
+            year={year}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Modifier
+              </DropdownMenuItem>
+            }
+          />
+          <DropdownMenuSeparator />
+          <ConfirmDialog
+            trigger={
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="text-red-600 focus:text-red-600"
+              >
+                Supprimer
+              </DropdownMenuItem>
+            }
+            title={`Supprimer ${year.label} ?`}
+            description="Les classes rattachées à cette année perdront leur rattachement."
+            confirmLabel="Supprimer"
+            destructive
+            successMessage={`Année ${year.label} supprimée`}
+            action={handleDelete}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

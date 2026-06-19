@@ -34,67 +34,43 @@ export function ClassRowActions({ cls, subjects, years }: Props) {
   }
 
   return (
-    <>
-      <div className="hidden sm:flex justify-end gap-1">
-        <ClassDialog
-          cls={cls}
-          subjects={subjects}
-          years={years}
-          trigger={<Button variant="ghost" size="sm">Modifier</Button>}
-        />
-        <ConfirmDialog
-          trigger={
-            <Button variant="ghost" size="sm" className="text-red-600">
-              Supprimer
-            </Button>
-          }
-          title={`Supprimer ${cls.name} ?`}
-          description="Les inscriptions, accès, chapitres et quiz de cette classe seront supprimés."
-          confirmLabel="Supprimer"
-          destructive
-          successMessage={`Classe ${cls.name} supprimée`}
-          action={handleDelete}
-        />
-      </div>
-
-      <div className="flex sm:hidden justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <ClassDialog
-              cls={cls}
-              subjects={subjects}
-              years={years}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  Modifier
-                </DropdownMenuItem>
-              }
-            />
-            <DropdownMenuSeparator />
-            <ConfirmDialog
-              trigger={
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  Supprimer
-                </DropdownMenuItem>
-              }
-              title={`Supprimer ${cls.name} ?`}
-              description="Les inscriptions, accès, chapitres et quiz de cette classe seront supprimés."
-              confirmLabel="Supprimer"
-              destructive
-              successMessage={`Classe ${cls.name} supprimée`}
-              action={handleDelete}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </>
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <ClassDialog
+            cls={cls}
+            subjects={subjects}
+            years={years}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Modifier
+              </DropdownMenuItem>
+            }
+          />
+          <DropdownMenuSeparator />
+          <ConfirmDialog
+            trigger={
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="text-red-600 focus:text-red-600"
+              >
+                Supprimer
+              </DropdownMenuItem>
+            }
+            title={`Supprimer ${cls.name} ?`}
+            description="Les inscriptions, accès, chapitres et quiz de cette classe seront supprimés."
+            confirmLabel="Supprimer"
+            destructive
+            successMessage={`Classe ${cls.name} supprimée`}
+            action={handleDelete}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

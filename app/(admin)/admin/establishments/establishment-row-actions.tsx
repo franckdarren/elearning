@@ -1,6 +1,14 @@
 "use client";
 
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EstablishmentDialog } from "./establishment-dialog";
 import { AssignManagerDialog } from "./assign-manager-dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -35,39 +43,52 @@ export function EstablishmentRowActions({
   }
 
   return (
-    <div className="flex justify-end gap-1">
-      <AssignManagerDialog
-        establishmentId={establishment.id}
-        establishmentName={establishment.name}
-        currentManagerId={establishment.managerId}
-        managers={managers}
-        trigger={
-          <Button variant="ghost" size="sm">
-            Gestionnaire
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal className="h-4 w-4" />
           </Button>
-        }
-      />
-      <EstablishmentDialog
-        establishment={establishment}
-        trigger={
-          <Button variant="ghost" size="sm">
-            Modifier
-          </Button>
-        }
-      />
-      <ConfirmDialog
-        trigger={
-          <Button variant="ghost" size="sm" className="text-red-600">
-            Supprimer
-          </Button>
-        }
-        title={`Supprimer ${establishment.name} ?`}
-        description="Cette action supprimera l'établissement ainsi que ses classes et matières (et leurs contenus). Les utilisateurs seront détachés."
-        confirmLabel="Supprimer"
-        destructive
-        successMessage={`Établissement ${establishment.name} supprimé`}
-        action={handleDelete}
-      />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <AssignManagerDialog
+            establishmentId={establishment.id}
+            establishmentName={establishment.name}
+            currentManagerId={establishment.managerId}
+            managers={managers}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Gestionnaire
+              </DropdownMenuItem>
+            }
+          />
+          <EstablishmentDialog
+            establishment={establishment}
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Modifier
+              </DropdownMenuItem>
+            }
+          />
+          <DropdownMenuSeparator />
+          <ConfirmDialog
+            trigger={
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="text-red-600 focus:text-red-600"
+              >
+                Supprimer
+              </DropdownMenuItem>
+            }
+            title={`Supprimer ${establishment.name} ?`}
+            description="Cette action supprimera l'établissement ainsi que ses classes et matières (et leurs contenus). Les utilisateurs seront détachés."
+            confirmLabel="Supprimer"
+            destructive
+            successMessage={`Établissement ${establishment.name} supprimé`}
+            action={handleDelete}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { MoreHorizontal } from "lucide-react";
 import { deleteResource, moveResource } from "@/lib/actions/resources";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,56 +80,11 @@ export function ResourceRow({ r }: ResourceRowProps) {
       <span className="min-w-0 flex-1 truncate">{r.title}</span>
       <StatusBadge status={r.status} />
 
-      {/* Actions desktop */}
-      <div className="hidden shrink-0 gap-1 sm:flex">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={movePending}
-          onClick={() => handleMove("up")}
-        >
-          ↑
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={movePending}
-          onClick={() => handleMove("down")}
-        >
-          ↓
-        </Button>
-        <ResourcePreviewDialog resourceId={r.id} />
-        <StatusDialog
-          resource={{
-            id: r.id,
-            title: r.title,
-            status: r.status,
-            publishedAt: r.publishedAt,
-            unpublishAt: r.unpublishAt,
-          }}
-        />
-        <ConfirmDialog
-          trigger={
-            <Button variant="ghost" size="sm" className="text-red-600">
-              Supprimer
-            </Button>
-          }
-          title={`Supprimer ${r.title} ?`}
-          description="Le fichier sera supprimé du stockage et la ressource retirée du chapitre."
-          confirmLabel="Supprimer"
-          destructive
-          action={handleDelete}
-        />
-      </div>
-
-      {/* Actions mobile — menu ⋯ */}
-      <div className="shrink-0 sm:hidden">
+      <div className="shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              ⋯
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
