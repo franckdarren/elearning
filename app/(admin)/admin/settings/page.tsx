@@ -18,8 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { YearDialog } from "./year-dialog";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { deleteAcademicYear } from "@/lib/actions/academic-years";
+import { YearRowActions } from "./year-row-actions";
 
 export const metadata = { title: "Admin · Paramètres" };
 export const dynamic = "force-dynamic";
@@ -74,37 +73,7 @@ export default async function SettingsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <YearDialog
-                          year={y}
-                          trigger={
-                            <Button variant="ghost" size="sm">
-                              Modifier
-                            </Button>
-                          }
-                        />
-                        <ConfirmDialog
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                            >
-                              Supprimer
-                            </Button>
-                          }
-                          title={`Supprimer ${y.label} ?`}
-                          description="Les classes rattachées à cette année perdront leur rattachement."
-                          confirmLabel="Supprimer"
-                          destructive
-                          successMessage={`Année ${y.label} supprimée`}
-                          action={async (formData: FormData) => {
-                            "use server";
-                            formData.set("id", y.id);
-                            await deleteAcademicYear(formData);
-                          }}
-                        />
-                      </div>
+                      <YearRowActions year={y} />
                     </TableCell>
                   </TableRow>
                 ))}

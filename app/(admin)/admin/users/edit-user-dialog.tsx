@@ -31,9 +31,10 @@ type Props = {
     role: "admin" | "manager" | "teacher" | "student";
     isActive: boolean;
   };
+  trigger?: React.ReactNode;
 };
 
-export function EditUserDialog({ user }: Props) {
+export function EditUserDialog({ user, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -63,9 +64,7 @@ export function EditUserDialog({ user }: Props) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          Modifier
-        </Button>
+        {trigger ?? <Button variant="ghost" size="sm">Modifier</Button>}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

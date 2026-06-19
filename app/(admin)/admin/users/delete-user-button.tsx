@@ -18,9 +18,11 @@ import {
 export function DeleteUserButton({
   id,
   name,
+  trigger,
 }: {
   id: string;
   name: string;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -42,14 +44,16 @@ export function DeleteUserButton({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        {trigger ?? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

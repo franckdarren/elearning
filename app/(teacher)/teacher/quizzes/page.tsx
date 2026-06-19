@@ -22,8 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { requireRole } from "@/lib/auth/permissions";
 import { QuizDialog } from "./quiz-dialog";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { deleteQuiz } from "@/lib/actions/quizzes";
+import { QuizRowActions } from "./quiz-row-actions";
 
 export const metadata = { title: "Enseignant · QCM" };
 export const dynamic = "force-dynamic";
@@ -190,44 +189,11 @@ export default async function TeacherQuizzesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Link href={`/teacher/quizzes/${q.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            Ouvrir
-                          </Button>
-                        </Link>
-                        <QuizDialog
-                          assignments={assignments}
-                          chapters={chaptersList}
-                          quiz={q}
-                          trigger={
-                            <Button variant="ghost" size="sm">
-                              Paramètres
-                            </Button>
-                          }
-                        />
-                        <ConfirmDialog
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                            >
-                              Supprimer
-                            </Button>
-                          }
-                          title={`Supprimer ${q.title} ?`}
-                          description="Les questions, options, tentatives et réponses associées seront supprimées."
-                          confirmLabel="Supprimer"
-                          destructive
-                          successMessage={`QCM "${q.title}" supprimé`}
-                          action={async (formData: FormData) => {
-                            "use server";
-                            formData.set("id", q.id);
-                            await deleteQuiz(formData);
-                          }}
-                        />
-                      </div>
+                      <QuizRowActions
+                        quiz={q}
+                        assignments={assignments}
+                        chapters={chaptersList}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

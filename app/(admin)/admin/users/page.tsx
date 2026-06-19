@@ -18,9 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "./create-user-dialog";
-import { EditUserDialog } from "./edit-user-dialog";
-import { ToggleActiveButton } from "./toggle-active-button";
-import { DeleteUserButton } from "./delete-user-button";
+import { UserRowActions } from "./user-row-actions";
 import { UsersFilter } from "./users-filter";
 
 export const metadata = { title: "Admin · Utilisateurs" };
@@ -131,23 +129,16 @@ export default async function UsersPage({
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <EditUserDialog
-                          user={{
-                            id: u.id,
-                            firstName: u.firstName,
-                            lastName: u.lastName,
-                            email: u.email,
-                            role: u.role as never,
-                            isActive: u.isActive,
-                          }}
-                        />
-                        <ToggleActiveButton id={u.id} isActive={u.isActive} />
-                        <DeleteUserButton
-                          id={u.id}
-                          name={`${u.firstName} ${u.lastName}`}
-                        />
-                      </div>
+                      <UserRowActions
+                        user={{
+                          id: u.id,
+                          firstName: u.firstName,
+                          lastName: u.lastName,
+                          email: u.email,
+                          role: u.role as never,
+                          isActive: u.isActive,
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

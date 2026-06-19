@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { SubjectDialog } from "./subject-dialog";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { deleteSubject } from "@/lib/actions/subjects";
+import { SubjectRowActions } from "./subject-row-actions";
 
 export const metadata = { title: "Admin · Matières" };
 export const dynamic = "force-dynamic";
@@ -69,37 +68,7 @@ export default async function SubjectsPage() {
                     </TableCell>
                     <TableCell>{s.classCount}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <SubjectDialog
-                          subject={s}
-                          trigger={
-                            <Button variant="ghost" size="sm">
-                              Modifier
-                            </Button>
-                          }
-                        />
-                        <ConfirmDialog
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                            >
-                              Supprimer
-                            </Button>
-                          }
-                          title={`Supprimer ${s.name} ?`}
-                          description="Cette action supprimera la matière et désassociera toutes les classes. Les chapitres et ressources liés seront supprimés."
-                          confirmLabel="Supprimer"
-                          destructive
-                          successMessage={`Matière ${s.name} supprimée`}
-                          action={async (formData: FormData) => {
-                            "use server";
-                            formData.set("id", s.id);
-                            await deleteSubject(formData);
-                          }}
-                        />
-                      </div>
+                      <SubjectRowActions subject={s} />
                     </TableCell>
                   </TableRow>
                 ))}

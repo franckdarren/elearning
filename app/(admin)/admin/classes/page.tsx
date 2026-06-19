@@ -18,8 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClassDialog } from "./class-dialog";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { deleteClass } from "@/lib/actions/classes";
+import { ClassRowActions } from "./class-row-actions";
 
 export const metadata = { title: "Admin · Classes" };
 export const dynamic = "force-dynamic";
@@ -101,46 +100,18 @@ export default async function ClassesPage() {
                       <Badge variant="outline">{c.subjectCount}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <ClassDialog
-                          cls={{
-                            id: c.id,
-                            name: c.name,
-                            level: c.level,
-                            description: c.description,
-                            academicYearId: c.academicYearId,
-                            subjectIds: c.subjectIds ?? [],
-                          }}
-                          subjects={allSubjects}
-                          years={allYears}
-                          trigger={
-                            <Button variant="ghost" size="sm">
-                              Modifier
-                            </Button>
-                          }
-                        />
-                        <ConfirmDialog
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                            >
-                              Supprimer
-                            </Button>
-                          }
-                          title={`Supprimer ${c.name} ?`}
-                          description="Les inscriptions, accès, chapitres et quiz de cette classe seront supprimés."
-                          confirmLabel="Supprimer"
-                          destructive
-                          successMessage={`Classe ${c.name} supprimée`}
-                          action={async (formData: FormData) => {
-                            "use server";
-                            formData.set("id", c.id);
-                            await deleteClass(formData);
-                          }}
-                        />
-                      </div>
+                      <ClassRowActions
+                        cls={{
+                          id: c.id,
+                          name: c.name,
+                          level: c.level,
+                          description: c.description,
+                          academicYearId: c.academicYearId,
+                          subjectIds: c.subjectIds ?? [],
+                        }}
+                        subjects={allSubjects}
+                        years={allYears}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
