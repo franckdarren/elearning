@@ -30,14 +30,17 @@ type Props = {
     email: string;
     role: "admin" | "manager" | "teacher" | "student";
     isActive: boolean;
+    establishmentId: string | null;
   };
+  establishments: { id: string; name: string }[];
   trigger?: React.ReactNode;
 };
 
-export function EditUserDialog({ user, trigger }: Props) {
+export function EditUserDialog({ user, establishments, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [role, setRole] = useState<string>(user.role);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -94,7 +97,7 @@ export function EditUserDialog({ user, trigger }: Props) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Rôle</Label>
-            <Select name="role" defaultValue={user.role}>
+            <Select name="role" value={role} onValueChange={setRole}>
               <SelectTrigger id="role">
                 <SelectValue />
               </SelectTrigger>
@@ -106,6 +109,27 @@ export function EditUserDialog({ user, trigger }: Props) {
               </SelectContent>
             </Select>
           </div>
+          {role !== "admin" ? (
+            <div className="space-y-2">
+              <Label htmlFor="establishmentId">Établissement</Label>
+              <Select
+                name="establishmentId"
+                defaultValue={user.establishmentId ?? ""}
+                required
+              >
+                <SelectTrigger id="establishmentId">
+                  <SelectValue placeholder="Sélectionner…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {establishments.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="isActive">Statut</Label>
             <Select name="isActive" defaultValue={String(user.isActive)}>

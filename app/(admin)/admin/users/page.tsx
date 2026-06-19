@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { db } from "@/lib/db";
-import { profiles } from "@/lib/db/schema";
-import { and, eq, ilike, isNull, or, desc, count } from "drizzle-orm";
+import { profiles, establishments } from "@/lib/db/schema";
+import { alias } from "drizzle-orm/pg-core";
+import { and, asc, eq, ilike, isNull, or, desc, count } from "drizzle-orm";
 import {
   Card,
   CardContent,
@@ -62,15 +63,30 @@ export default async function UsersPage({
   }
   const where = and(...filters);
 
-  const [rows, totalRow] = await Promise.all([
+  const est = alias(establishments, "est");
+  const [rows, totalRow, establishmentList] = await Promise.all([
     db
-      .select()
+      .select({
+        id: profiles.id,
+        firstName: profiles.firstName,
+        lastName: profiles.lastName,
+        email: profiles.email,
+        role: profiles.role,
+        isActive: profiles.isActive,
+        establishmentId: profiles.establishmentId,
+        establishmentName: est.name,
+      })
       .from(profiles)
+      .leftJoin(est, eq(est.id, profiles.establishmentId))
       .where(where)
       .orderBy(desc(profiles.createdAt))
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE),
     db.select({ value: count() }).from(profiles).where(where),
+    db
+      .select({ id: establishments.id, name: establishments.name })
+      .from(establishments)
+      .orderBy(asc(establishments.name)),
   ]);
   const total = totalRow[0]?.value ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -84,7 +100,7 @@ export default async function UsersPage({
             {total} utilisateur{total > 1 ? "s" : ""} au total
           </p>
         </div>
-        <CreateUserDialog />
+        <CreateUserDialog establishments={establishmentList} />
       </div>
 
       <Card>
@@ -109,6 +125,7 @@ export default async function UsersPage({
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Rôle</TableHead>
+                  <TableHead>Établissement</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -121,6 +138,9 @@ export default async function UsersPage({
                     </TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>{ROLE_LABEL[u.role] ?? u.role}</TableCell>
+                    <TableCell className="text-zinc-500">
+                      {u.establishmentName ?? "—"}
+                    </TableCell>
                     <TableCell>
                       {u.isActive ? (
                         <Badge variant="secondary">Actif</Badge>
@@ -137,7 +157,9 @@ export default async function UsersPage({
                           email: u.email,
                           role: u.role as never,
                           isActive: u.isActive,
+                          establishmentId: u.establishmentId,
                         }}
+                        establishments={establishmentList}
                       />
                     </TableCell>
                   </TableRow>

@@ -34,7 +34,7 @@ const supabase = createClient(
 const client = postgres(process.env.DATABASE_URL, { prepare: false });
 const db = drizzle(client, { schema });
 
-type Role = "admin" | "teacher" | "student";
+type Role = "admin" | "manager" | "teacher" | "student";
 
 async function ensureUser(opts: {
   email: string;
@@ -42,7 +42,9 @@ async function ensureUser(opts: {
   firstName: string;
   lastName: string;
   role: Role;
+  establishmentId?: string | null;
 }): Promise<string> {
+  const establishmentId = opts.establishmentId ?? null;
   const existing = await db
     .select({ id: schema.profiles.id })
     .from(schema.profiles)
@@ -50,6 +52,12 @@ async function ensureUser(opts: {
     .limit(1);
   if (existing[0]) {
     console.log(`  · ${opts.email} (${opts.role}) — already exists`);
+    if (establishmentId) {
+      await db
+        .update(schema.profiles)
+        .set({ establishmentId })
+        .where(eq(schema.profiles.id, existing[0].id));
+    }
     return existing[0].id;
   }
 
@@ -61,6 +69,7 @@ async function ensureUser(opts: {
       first_name: opts.firstName,
       last_name: opts.lastName,
       role: opts.role,
+      establishment_id: establishmentId ?? "",
     },
   });
   if (error || !data.user) throw error ?? new Error("createUser failed");
@@ -73,11 +82,26 @@ async function ensureUser(opts: {
       role: opts.role,
       firstName: opts.firstName,
       lastName: opts.lastName,
+      establishmentId,
     })
     .where(eq(schema.profiles.id, data.user.id));
 
   console.log(`  ✓ ${opts.email} (${opts.role}) created`);
   return data.user.id;
+}
+
+async function ensureEstablishment(name: string) {
+  const found = await db
+    .select()
+    .from(schema.establishments)
+    .where(eq(schema.establishments.name, name))
+    .limit(1);
+  if (found[0]) return found[0];
+  const [row] = await db
+    .insert(schema.establishments)
+    .values({ name })
+    .returning();
+  return row;
 }
 
 async function ensureAcademicYear(label: string) {
@@ -99,14 +123,17 @@ async function ensureAcademicYear(label: string) {
   return row;
 }
 
-async function ensureSubject(name: string) {
+async function ensureSubject(name: string, establishmentId: string) {
   const found = await db
     .select()
     .from(schema.subjects)
     .where(eq(schema.subjects.name, name))
     .limit(1);
   if (found[0]) return found[0];
-  const [row] = await db.insert(schema.subjects).values({ name }).returning();
+  const [row] = await db
+    .insert(schema.subjects)
+    .values({ name, establishmentId })
+    .returning();
   return row;
 }
 
@@ -114,6 +141,7 @@ async function ensureClass(opts: {
   name: string;
   level: string;
   yearId: string;
+  establishmentId: string;
 }) {
   const found = await db
     .select()
@@ -127,6 +155,7 @@ async function ensureClass(opts: {
       name: opts.name,
       level: opts.level,
       academicYearId: opts.yearId,
+      establishmentId: opts.establishmentId,
     })
     .returning();
   return row;
@@ -169,6 +198,11 @@ async function ensureStudentSubjectAccess(
 }
 
 async function main() {
+  console.log("→ Seeding establishment");
+  const establishment = await ensureEstablishment(
+    "Établissement de démonstration",
+  );
+
   console.log("→ Seeding users");
   const adminId = await ensureUser({
     email: "admin@passerelle.local",
@@ -177,12 +211,21 @@ async function main() {
     lastName: "Principal",
     role: "admin",
   });
+  const managerId = await ensureUser({
+    email: "manager@passerelle.local",
+    password: "Manager123!",
+    firstName: "Sophie",
+    lastName: "Bernard",
+    role: "manager",
+    establishmentId: establishment.id,
+  });
   const teacherId = await ensureUser({
     email: "teacher@passerelle.local",
     password: "Teacher123!",
     firstName: "Marie",
     lastName: "Dupont",
     role: "teacher",
+    establishmentId: establishment.id,
   });
   const studentId = await ensureUser({
     email: "student@passerelle.local",
@@ -190,26 +233,35 @@ async function main() {
     firstName: "Lucas",
     lastName: "Martin",
     role: "student",
+    establishmentId: establishment.id,
   });
+
+  console.log("→ Assigning manager to establishment");
+  await db
+    .update(schema.establishments)
+    .set({ managerId })
+    .where(eq(schema.establishments.id, establishment.id));
 
   console.log("→ Seeding academic year");
   const year = await ensureAcademicYear("2025-2026");
 
   console.log("→ Seeding subjects");
-  const maths = await ensureSubject("Mathématiques");
-  const french = await ensureSubject("Français");
-  const history = await ensureSubject("Histoire");
+  const maths = await ensureSubject("Mathématiques", establishment.id);
+  const french = await ensureSubject("Français", establishment.id);
+  const history = await ensureSubject("Histoire", establishment.id);
 
   console.log("→ Seeding classes");
   const classA = await ensureClass({
     name: "3ème A",
     level: "3ème",
     yearId: year.id,
+    establishmentId: establishment.id,
   });
   const classB = await ensureClass({
     name: "4ème B",
     level: "4ème",
     yearId: year.id,
+    establishmentId: establishment.id,
   });
 
   console.log("→ Linking subjects to classes");
@@ -228,9 +280,12 @@ async function main() {
 
   console.log("\nDone.");
   console.log("Admin    : admin@passerelle.local / Admin123!");
+  console.log("Manager  : manager@passerelle.local / Manager123!");
   console.log("Teacher  : teacher@passerelle.local / Teacher123!");
   console.log("Student  : student@passerelle.local / Student123!");
-  console.log(`(adminId=${adminId}, teacherId=${teacherId}, studentId=${studentId})`);
+  console.log(
+    `(adminId=${adminId}, managerId=${managerId}, teacherId=${teacherId}, studentId=${studentId})`,
+  );
 }
 
 main()

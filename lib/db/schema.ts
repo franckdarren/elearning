@@ -64,6 +64,28 @@ export const notificationTypeEnum = pgEnum("notification_type", [
 ]);
 
 // ---------------------------------------------------------------------------
+// establishments
+// An admin creates an establishment and assigns it to a single manager
+// (managerId is UNIQUE → one manager manages at most one establishment).
+// ---------------------------------------------------------------------------
+export const establishments = pgTable(
+  "establishments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    city: text("city"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    // FK to profiles is declared at the SQL level (migration 0006) to avoid a
+    // circular reference in the Drizzle schema (profiles also points here).
+    managerId: uuid("manager_id"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [uniqueIndex("establishments_manager_uq").on(t.managerId)],
+);
+
+// ---------------------------------------------------------------------------
 // profiles (1-1 with auth.users)
 // ---------------------------------------------------------------------------
 export const profiles = pgTable("profiles", {
@@ -74,6 +96,11 @@ export const profiles = pgTable("profiles", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull(),
+  // null for admin (global scope); set for manager/teacher/student.
+  establishmentId: uuid("establishment_id").references(
+    () => establishments.id,
+    { onDelete: "set null" },
+  ),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -102,26 +129,41 @@ export const academicYears = pgTable(
 // ---------------------------------------------------------------------------
 // classes
 // ---------------------------------------------------------------------------
-export const classes = pgTable("classes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  academicYearId: uuid("academic_year_id").references(() => academicYears.id, {
-    onDelete: "set null",
-  }),
-  name: text("name").notNull(),
-  level: text("level").notNull(),
-  description: text("description"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+export const classes = pgTable(
+  "classes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    establishmentId: uuid("establishment_id")
+      .notNull()
+      .references(() => establishments.id, { onDelete: "cascade" }),
+    academicYearId: uuid("academic_year_id").references(
+      () => academicYears.id,
+      { onDelete: "set null" },
+    ),
+    name: text("name").notNull(),
+    level: text("level").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index("classes_establishment_idx").on(t.establishmentId)],
+);
 
 // ---------------------------------------------------------------------------
 // subjects
 // ---------------------------------------------------------------------------
-export const subjects = pgTable("subjects", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+export const subjects = pgTable(
+  "subjects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    establishmentId: uuid("establishment_id")
+      .notNull()
+      .references(() => establishments.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index("subjects_establishment_idx").on(t.establishmentId)],
+);
 
 // ---------------------------------------------------------------------------
 // class_subjects
@@ -462,6 +504,9 @@ export const activityLogs = pgTable(
 // ---------------------------------------------------------------------------
 // Type exports
 // ---------------------------------------------------------------------------
+export type Establishment = typeof establishments.$inferSelect;
+export type NewEstablishment = typeof establishments.$inferInsert;
+
 export type Profile = typeof profiles.$inferSelect;
 export type NewProfile = typeof profiles.$inferInsert;
 

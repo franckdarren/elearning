@@ -2,7 +2,10 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { upsertSubject, type ActionState } from "@/lib/actions/subjects";
+import {
+  upsertEstablishment,
+  type ActionState,
+} from "@/lib/actions/establishments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,27 +17,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-export function SubjectDialog({
-  subject,
-  establishments,
+type Establishment = {
+  id: string;
+  name: string;
+  city: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+};
+
+export function EstablishmentDialog({
+  establishment,
   trigger,
 }: {
-  subject?: { id: string; name: string; description: string | null };
-  // Fournie côté admin (choix de l'établissement) ; omise côté gestionnaire.
-  establishments?: { id: string; name: string }[];
+  establishment?: Establishment;
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
-    upsertSubject,
+    upsertEstablishment,
     null,
   );
 
@@ -51,30 +52,14 @@ export function SubjectDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {subject ? `Modifier ${subject.name}` : "Nouvelle matière"}
+            {establishment
+              ? `Modifier ${establishment.name}`
+              : "Nouvel établissement"}
           </DialogTitle>
         </DialogHeader>
         <form action={formAction} className="space-y-4">
-          {subject ? (
-            <input type="hidden" name="id" value={subject.id} />
-          ) : null}
-
-          {!subject && establishments ? (
-            <div className="space-y-2">
-              <Label htmlFor="establishmentId">Établissement</Label>
-              <Select name="establishmentId" required>
-                <SelectTrigger id="establishmentId">
-                  <SelectValue placeholder="Sélectionner…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {establishments.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {establishment ? (
+            <input type="hidden" name="id" value={establishment.id} />
           ) : null}
 
           <div className="space-y-2">
@@ -83,18 +68,41 @@ export function SubjectDialog({
               id="name"
               name="name"
               required
-              defaultValue={subject?.name ?? ""}
               maxLength={120}
+              placeholder="Lycée Victor Hugo"
+              defaultValue={establishment?.name ?? ""}
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="city">Ville</Label>
             <Input
-              id="description"
-              name="description"
-              defaultValue={subject?.description ?? ""}
-              maxLength={500}
+              id="city"
+              name="city"
+              maxLength={120}
+              defaultValue={establishment?.city ?? ""}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="contactEmail">Email de contact</Label>
+              <Input
+                id="contactEmail"
+                name="contactEmail"
+                type="email"
+                defaultValue={establishment?.contactEmail ?? ""}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactPhone">Téléphone</Label>
+              <Input
+                id="contactPhone"
+                name="contactPhone"
+                maxLength={40}
+                defaultValue={establishment?.contactPhone ?? ""}
+              />
+            </div>
           </div>
 
           {state?.error ? (
@@ -112,7 +120,7 @@ export function SubjectDialog({
               Annuler
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "…" : subject ? "Enregistrer" : "Créer"}
+              {pending ? "…" : establishment ? "Enregistrer" : "Créer"}
             </Button>
           </DialogFooter>
         </form>

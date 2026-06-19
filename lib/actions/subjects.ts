@@ -13,7 +13,7 @@ export async function upsertSubject(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireRole(["admin", "manager"]);
+  const user = await requireRole(["admin", "manager"]);
 
   const parsed = subjectInputSchema.safeParse({
     id: formData.get("id") || undefined,
@@ -31,7 +31,17 @@ export async function upsertSubject(
       .set({ name, description: description ?? null })
       .where(eq(subjects.id, id));
   } else {
-    await db.insert(subjects).values({ name, description: description ?? null });
+    // Le gestionnaire crée dans SON établissement ; l'admin choisit dans le formulaire.
+    const establishmentId =
+      user.role === "manager"
+        ? user.establishmentId
+        : (formData.get("establishmentId") as string | null) || null;
+    if (!establishmentId) {
+      return { error: "Établissement requis" };
+    }
+    await db
+      .insert(subjects)
+      .values({ establishmentId, name, description: description ?? null });
   }
 
   revalidatePath("/admin/subjects");

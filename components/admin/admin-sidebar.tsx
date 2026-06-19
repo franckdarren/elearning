@@ -9,11 +9,13 @@ import {
   BookOpen,
   UserCheck,
   Settings,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/admin/establishments", label: "Établissements", icon: Building2 },
   { href: "/admin/users", label: "Utilisateurs", icon: Users },
   { href: "/admin/classes", label: "Classes", icon: GraduationCap },
   { href: "/admin/subjects", label: "Matières", icon: BookOpen },

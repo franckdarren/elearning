@@ -13,7 +13,7 @@ export async function upsertClass(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireRole(["admin", "manager"]);
+  const user = await requireRole(["admin", "manager"]);
 
   const parsed = classInputSchema.safeParse({
     id: formData.get("id") || undefined,
@@ -28,6 +28,15 @@ export async function upsertClass(
   }
   const { id, name, level, description, academicYearId, subjectIds } =
     parsed.data;
+
+  // Le gestionnaire crée dans SON établissement ; l'admin choisit dans le formulaire.
+  const establishmentId =
+    user.role === "manager"
+      ? user.establishmentId
+      : (formData.get("establishmentId") as string | null) || null;
+  if (!id && !establishmentId) {
+    return { error: "Établissement requis" };
+  }
 
   const targetId = await db.transaction(async (tx) => {
     let classId: string;
@@ -46,6 +55,7 @@ export async function upsertClass(
       const [inserted] = await tx
         .insert(classes)
         .values({
+          establishmentId: establishmentId!,
           name,
           level,
           description: description ?? null,

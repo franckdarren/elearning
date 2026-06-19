@@ -20,9 +20,10 @@ type Props = {
     level: string;
     description: string | null;
     academicYearId: string | null;
+    establishmentId: string;
     subjectIds: string[];
   };
-  subjects: { id: string; name: string }[];
+  subjects: { id: string; name: string; establishmentId: string }[];
   years: { id: string; label: string }[];
 };
 

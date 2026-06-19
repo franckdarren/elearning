@@ -2,8 +2,9 @@
 -- Implemented in Phase 1 (see docs/06-ROADMAP.md).
 --
 -- Expected content:
---   - 1 admin (auth.users + profiles)
+--   - 1 admin (auth.users + profiles, establishment_id NULL)
+--   - 1 establishment assigned to a manager (establishments.manager_id)
 --   - 1 current academic_year
---   - 2-3 classes, 3-4 subjects, class_subjects
---   - 1 teacher with teacher_assignments
---   - 1 student with enrollments + student_subject_access
+--   - 2-3 classes, 3-4 subjects, class_subjects (rattachés à l'établissement)
+--   - 1 teacher with teacher_assignments (establishment_id de l'établissement)
+--   - 1 student with enrollments + student_subject_access (même établissement)

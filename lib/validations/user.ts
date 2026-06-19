@@ -14,6 +14,12 @@ export const inviteUserSchema = z.object({
     .regex(/[A-Z]/, "Au moins une majuscule")
     .regex(/[a-z]/, "Au moins une minuscule")
     .regex(/[0-9]/, "Au moins un chiffre"),
+  establishmentId: z
+    .string()
+    .uuid()
+    .nullable()
+    .optional()
+    .or(z.literal("").transform(() => null)),
 });
 
 export type InviteUserInput = z.infer<typeof inviteUserSchema>;
@@ -24,6 +30,12 @@ export const updateUserSchema = z.object({
   lastName: z.string().trim().min(1, "Nom requis"),
   role: userRoleSchema,
   isActive: z.coerce.boolean(),
+  establishmentId: z
+    .string()
+    .uuid()
+    .nullable()
+    .optional()
+    .or(z.literal("").transform(() => null)),
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

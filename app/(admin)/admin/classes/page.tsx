@@ -4,8 +4,9 @@ import {
   subjects,
   academicYears,
   classSubjects,
+  establishments,
 } from "@/lib/db/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -24,7 +25,7 @@ export const metadata = { title: "Admin · Classes" };
 export const dynamic = "force-dynamic";
 
 export default async function ClassesPage() {
-  const [rows, allSubjects, allYears] = await Promise.all([
+  const [rows, allSubjects, allYears, establishmentList] = await Promise.all([
     db
       .select({
         id: classes.id,
@@ -32,6 +33,8 @@ export default async function ClassesPage() {
         level: classes.level,
         description: classes.description,
         academicYearId: classes.academicYearId,
+        establishmentId: classes.establishmentId,
+        establishmentName: establishments.name,
         yearLabel: academicYears.label,
         subjectIds: sql<
           string[]
@@ -41,18 +44,27 @@ export default async function ClassesPage() {
         ),
       })
       .from(classes)
+      .leftJoin(establishments, eq(establishments.id, classes.establishmentId))
       .leftJoin(academicYears, eq(academicYears.id, classes.academicYearId))
       .leftJoin(classSubjects, eq(classSubjects.classId, classes.id))
-      .groupBy(classes.id, academicYears.label)
+      .groupBy(classes.id, academicYears.label, establishments.name)
       .orderBy(desc(classes.createdAt)),
     db
-      .select({ id: subjects.id, name: subjects.name })
+      .select({
+        id: subjects.id,
+        name: subjects.name,
+        establishmentId: subjects.establishmentId,
+      })
       .from(subjects)
       .orderBy(subjects.name),
     db
       .select({ id: academicYears.id, label: academicYears.label })
       .from(academicYears)
       .orderBy(desc(academicYears.createdAt)),
+    db
+      .select({ id: establishments.id, name: establishments.name })
+      .from(establishments)
+      .orderBy(asc(establishments.name)),
   ]);
 
   return (
@@ -67,6 +79,7 @@ export default async function ClassesPage() {
         <ClassDialog
           subjects={allSubjects}
           years={allYears}
+          establishments={establishmentList}
           trigger={<Button>Nouvelle classe</Button>}
         />
       </div>
@@ -80,6 +93,7 @@ export default async function ClassesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nom</TableHead>
+                  <TableHead>Établissement</TableHead>
                   <TableHead>Niveau</TableHead>
                   <TableHead>Année</TableHead>
                   <TableHead>Matières</TableHead>
@@ -90,6 +104,9 @@ export default async function ClassesPage() {
                 {rows.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="text-zinc-500">
+                      {c.establishmentName ?? "—"}
+                    </TableCell>
                     <TableCell>{c.level}</TableCell>
                     <TableCell>
                       {c.yearLabel ?? (
@@ -107,6 +124,7 @@ export default async function ClassesPage() {
                           level: c.level,
                           description: c.description,
                           academicYearId: c.academicYearId,
+                          establishmentId: c.establishmentId,
                           subjectIds: c.subjectIds ?? [],
                         }}
                         subjects={allSubjects}

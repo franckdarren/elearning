@@ -22,8 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Subject = { id: string; name: string };
+type Subject = { id: string; name: string; establishmentId: string };
 type Year = { id: string; label: string };
+type Establishment = { id: string; name: string };
 
 type Props = {
   cls?: {
@@ -32,18 +33,32 @@ type Props = {
     level: string;
     description: string | null;
     academicYearId: string | null;
+    establishmentId: string;
     subjectIds: string[];
   };
   subjects: Subject[];
   years: Year[];
+  // Fournie côté admin (choix de l'établissement) ; omise côté gestionnaire.
+  establishments?: Establishment[];
   trigger: React.ReactNode;
 };
 
-export function ClassDialog({ cls, subjects, years, trigger }: Props) {
+export function ClassDialog({
+  cls,
+  subjects,
+  years,
+  establishments,
+  trigger,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     upsertClass,
     null,
+  );
+
+  // Établissement sélectionné (admin). En édition, fixé à celui de la classe.
+  const [establishmentId, setEstablishmentId] = useState<string>(
+    cls?.establishmentId ?? establishments?.[0]?.id ?? "",
   );
 
   useEffect(() => {
@@ -52,6 +67,12 @@ export function ClassDialog({ cls, subjects, years, trigger }: Props) {
       setOpen(false);
     }
   }, [state]);
+
+  // Côté admin on filtre les matières par établissement ; côté gestionnaire
+  // (pas de prop establishments) les matières reçues sont déjà cloisonnées.
+  const visibleSubjects = establishments
+    ? subjects.filter((s) => s.establishmentId === establishmentId)
+    : subjects;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -64,6 +85,32 @@ export function ClassDialog({ cls, subjects, years, trigger }: Props) {
         </DialogHeader>
         <form action={formAction} className="space-y-4">
           {cls ? <input type="hidden" name="id" value={cls.id} /> : null}
+
+          {!cls && establishments ? (
+            <div className="space-y-2">
+              <Label htmlFor="establishmentId">Établissement</Label>
+              <Select
+                value={establishmentId}
+                onValueChange={setEstablishmentId}
+              >
+                <SelectTrigger id="establishmentId">
+                  <SelectValue placeholder="Sélectionner…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {establishments.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <input
+                type="hidden"
+                name="establishmentId"
+                value={establishmentId}
+              />
+            </div>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -118,13 +165,14 @@ export function ClassDialog({ cls, subjects, years, trigger }: Props) {
 
           <div className="space-y-2">
             <Label>Matières proposées</Label>
-            {subjects.length === 0 ? (
+            {visibleSubjects.length === 0 ? (
               <p className="text-sm text-zinc-500">
-                Aucune matière. Créez-en une dans la page Matières.
+                Aucune matière pour cet établissement. Créez-en une dans la page
+                Matières.
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
-                {subjects.map((s) => (
+                {visibleSubjects.map((s) => (
                   <label
                     key={s.id}
                     className="flex cursor-pointer items-center gap-2 text-sm"

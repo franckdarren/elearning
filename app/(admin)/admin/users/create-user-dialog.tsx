@@ -22,10 +22,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function CreateUserDialog() {
+export function CreateUserDialog({
+  establishments,
+}: {
+  establishments: { id: string; name: string }[];
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [role, setRole] = useState("student");
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -75,7 +80,7 @@ export function CreateUserDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Rôle</Label>
-            <Select name="role" defaultValue="student">
+            <Select name="role" value={role} onValueChange={setRole}>
               <SelectTrigger id="role">
                 <SelectValue />
               </SelectTrigger>
@@ -87,6 +92,29 @@ export function CreateUserDialog() {
               </SelectContent>
             </Select>
           </div>
+          {role !== "admin" ? (
+            <div className="space-y-2">
+              <Label htmlFor="establishmentId">Établissement</Label>
+              <Select name="establishmentId" required>
+                <SelectTrigger id="establishmentId">
+                  <SelectValue placeholder="Sélectionner…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {establishments.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {role === "manager" ? (
+                <p className="text-xs text-zinc-500">
+                  Vous pourrez aussi (re)lier ce gestionnaire depuis la page
+                  Établissements.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="password">Mot de passe initial</Label>
             <Input id="password" name="password" type="text" required />

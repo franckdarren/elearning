@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { subjects, classSubjects, classes } from "@/lib/db/schema";
 import { eq, sql, desc } from "drizzle-orm";
+import { requireEstablishment } from "@/lib/auth/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -17,6 +18,8 @@ export const metadata = { title: "Gestionnaire · Matières" };
 export const dynamic = "force-dynamic";
 
 export default async function ManagerSubjectsPage() {
+  const user = await requireEstablishment();
+
   const rows = await db
     .select({
       id: subjects.id,
@@ -29,6 +32,7 @@ export default async function ManagerSubjectsPage() {
     .from(subjects)
     .leftJoin(classSubjects, eq(classSubjects.subjectId, subjects.id))
     .leftJoin(classes, eq(classes.id, classSubjects.classId))
+    .where(eq(subjects.establishmentId, user.establishmentId))
     .groupBy(subjects.id)
     .orderBy(desc(subjects.createdAt));
 

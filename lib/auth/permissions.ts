@@ -9,6 +9,7 @@ export type CurrentUser = {
   role: UserRole;
   fullName: string | null;
   isActive: boolean;
+  establishmentId: string | null;
 };
 
 const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
@@ -27,7 +28,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, role, first_name, last_name, is_active")
+    .select("id, email, role, first_name, last_name, is_active, establishment_id")
     .eq("id", user.id)
     .single();
 
@@ -41,6 +42,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     role: profile.role as UserRole,
     fullName,
     isActive: profile.is_active,
+    establishmentId: profile.establishment_id ?? null,
   };
 }
 
@@ -63,4 +65,19 @@ export async function requireRole(
 
 export function dashboardPath(role: UserRole): string {
   return DASHBOARD_BY_ROLE[role];
+}
+
+/**
+ * Garantit un gestionnaire (ou admin) rattaché à un établissement.
+ * Un manager sans établissement attribué est renvoyé sur son tableau de bord,
+ * qui affiche le message « Aucun établissement attribué ».
+ */
+export async function requireEstablishment(): Promise<
+  CurrentUser & { establishmentId: string }
+> {
+  const user = await requireRole(["manager", "admin"]);
+  if (!user.establishmentId) {
+    redirect(dashboardPath(user.role));
+  }
+  return user as CurrentUser & { establishmentId: string };
 }

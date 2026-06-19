@@ -24,10 +24,12 @@ type Props = {
     email: string;
     role: "admin" | "manager" | "teacher" | "student";
     isActive: boolean;
+    establishmentId: string | null;
   };
+  establishments: { id: string; name: string }[];
 };
 
-export function UserRowActions({ user }: Props) {
+export function UserRowActions({ user, establishments }: Props) {
   const [togglePending, startToggle] = useTransition();
   const fullName = `${user.firstName} ${user.lastName}`;
 
@@ -47,7 +49,7 @@ export function UserRowActions({ user }: Props) {
   return (
     <>
       <div className="hidden sm:flex justify-end gap-1">
-        <EditUserDialog user={user} />
+        <EditUserDialog user={user} establishments={establishments} />
         <ToggleActiveButton id={user.id} isActive={user.isActive} />
         <DeleteUserButton id={user.id} name={fullName} />
       </div>
@@ -62,6 +64,7 @@ export function UserRowActions({ user }: Props) {
           <DropdownMenuContent align="end">
             <EditUserDialog
               user={user}
+              establishments={establishments}
               trigger={
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                   Modifier

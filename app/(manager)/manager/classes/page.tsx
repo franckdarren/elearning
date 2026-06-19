@@ -6,6 +6,7 @@ import {
   classSubjects,
 } from "@/lib/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
+import { requireEstablishment } from "@/lib/auth/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -23,6 +24,8 @@ export const metadata = { title: "Gestionnaire · Classes" };
 export const dynamic = "force-dynamic";
 
 export default async function ManagerClassesPage() {
+  const user = await requireEstablishment();
+
   const [rows, allSubjects, allYears] = await Promise.all([
     db
       .select({
@@ -31,6 +34,7 @@ export default async function ManagerClassesPage() {
         level: classes.level,
         description: classes.description,
         academicYearId: classes.academicYearId,
+        establishmentId: classes.establishmentId,
         yearLabel: academicYears.label,
         subjectIds: sql<
           string[]
@@ -42,11 +46,17 @@ export default async function ManagerClassesPage() {
       .from(classes)
       .leftJoin(academicYears, eq(academicYears.id, classes.academicYearId))
       .leftJoin(classSubjects, eq(classSubjects.classId, classes.id))
+      .where(eq(classes.establishmentId, user.establishmentId))
       .groupBy(classes.id, academicYears.label)
       .orderBy(desc(classes.createdAt)),
     db
-      .select({ id: subjects.id, name: subjects.name })
+      .select({
+        id: subjects.id,
+        name: subjects.name,
+        establishmentId: subjects.establishmentId,
+      })
       .from(subjects)
+      .where(eq(subjects.establishmentId, user.establishmentId))
       .orderBy(subjects.name),
     db
       .select({ id: academicYears.id, label: academicYears.label })
@@ -104,6 +114,7 @@ export default async function ManagerClassesPage() {
                           level: c.level,
                           description: c.description,
                           academicYearId: c.academicYearId,
+                          establishmentId: c.establishmentId,
                           subjectIds: c.subjectIds ?? [],
                         }}
                         subjects={allSubjects}

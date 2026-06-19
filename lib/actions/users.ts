@@ -34,9 +34,17 @@ export async function createUser(
     lastName: formData.get("lastName"),
     role: formData.get("role"),
     password: formData.get("password"),
+    establishmentId: formData.get("establishmentId") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
+  }
+
+  // L'admin est global ; les autres rôles sont rattachés à un établissement.
+  const establishmentId =
+    parsed.data.role === "admin" ? null : parsed.data.establishmentId ?? null;
+  if (parsed.data.role !== "admin" && !establishmentId) {
+    return { error: "Établissement requis pour ce rôle" };
   }
 
   const supabase = adminClient();
@@ -48,19 +56,21 @@ export async function createUser(
       first_name: parsed.data.firstName,
       last_name: parsed.data.lastName,
       role: parsed.data.role,
+      establishment_id: establishmentId ?? "",
     },
   });
   if (error || !data.user) {
     return { error: error?.message ?? "Création échouée" };
   }
 
-  // Trigger inserted a default profile; sync role + names.
+  // Trigger inserted a default profile; sync role + names + establishment.
   await db
     .update(profiles)
     .set({
       role: parsed.data.role,
       firstName: parsed.data.firstName,
       lastName: parsed.data.lastName,
+      establishmentId,
     })
     .where(eq(profiles.id, data.user.id));
 
@@ -85,9 +95,17 @@ export async function updateUser(
     lastName: formData.get("lastName"),
     role: formData.get("role"),
     isActive: formData.get("isActive") === "true",
+    establishmentId: formData.get("establishmentId") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
+  }
+
+  // L'admin reste global ; les autres rôles doivent avoir un établissement.
+  const establishmentId =
+    parsed.data.role === "admin" ? null : parsed.data.establishmentId ?? null;
+  if (parsed.data.role !== "admin" && !establishmentId) {
+    return { error: "Établissement requis pour ce rôle" };
   }
 
   await db
@@ -97,6 +115,7 @@ export async function updateUser(
       lastName: parsed.data.lastName,
       role: parsed.data.role,
       isActive: parsed.data.isActive,
+      establishmentId,
     })
     .where(eq(profiles.id, parsed.data.id));
 

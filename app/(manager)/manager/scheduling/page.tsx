@@ -7,6 +7,7 @@ import {
   quizzes,
 } from "@/lib/db/schema";
 import { and, asc, eq, sql } from "drizzle-orm";
+import { requireEstablishment } from "@/lib/auth/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -35,6 +36,9 @@ function formatDate(d: Date | null) {
 }
 
 export default async function ManagerSchedulingPage() {
+  const user = await requireEstablishment();
+  const est = user.establishmentId;
+
   const [scheduledResources, scheduledQuizzes] = await Promise.all([
     db
       .select({
@@ -56,6 +60,7 @@ export default async function ManagerSchedulingPage() {
         and(
           eq(resources.status, "scheduled"),
           sql`${resources.publishedAt} > now()`,
+          eq(classes.establishmentId, est),
         ),
       )
       .orderBy(asc(resources.publishedAt)),
@@ -72,7 +77,9 @@ export default async function ManagerSchedulingPage() {
       .from(quizzes)
       .innerJoin(classes, eq(classes.id, quizzes.classId))
       .innerJoin(subjects, eq(subjects.id, quizzes.subjectId))
-      .where(eq(quizzes.status, "scheduled"))
+      .where(
+        and(eq(quizzes.status, "scheduled"), eq(classes.establishmentId, est)),
+      )
       .orderBy(asc(quizzes.opensAt)),
   ]);
 

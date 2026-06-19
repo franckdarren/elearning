@@ -8,7 +8,8 @@ import {
   studentSubjectAccess,
   classSubjects,
 } from "@/lib/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { and, eq, asc } from "drizzle-orm";
+import { requireEstablishment } from "@/lib/auth/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -29,6 +30,9 @@ export const metadata = { title: "Gestionnaire · Affectations" };
 export const dynamic = "force-dynamic";
 
 export default async function ManagerAssignmentsPage() {
+  const user = await requireEstablishment();
+  const est = user.establishmentId;
+
   const [
     teachers,
     students,
@@ -46,7 +50,7 @@ export default async function ManagerAssignmentsPage() {
         lastName: profiles.lastName,
       })
       .from(profiles)
-      .where(eq(profiles.role, "teacher"))
+      .where(and(eq(profiles.role, "teacher"), eq(profiles.establishmentId, est)))
       .orderBy(asc(profiles.lastName)),
     db
       .select({
@@ -56,15 +60,17 @@ export default async function ManagerAssignmentsPage() {
         email: profiles.email,
       })
       .from(profiles)
-      .where(eq(profiles.role, "student"))
+      .where(and(eq(profiles.role, "student"), eq(profiles.establishmentId, est)))
       .orderBy(asc(profiles.lastName)),
     db
       .select({ id: classes.id, name: classes.name })
       .from(classes)
+      .where(eq(classes.establishmentId, est))
       .orderBy(classes.name),
     db
       .select({ id: subjects.id, name: subjects.name })
       .from(subjects)
+      .where(eq(subjects.establishmentId, est))
       .orderBy(subjects.name),
     db
       .select({
@@ -78,6 +84,7 @@ export default async function ManagerAssignmentsPage() {
       .innerJoin(profiles, eq(profiles.id, teacherAssignments.teacherId))
       .innerJoin(classes, eq(classes.id, teacherAssignments.classId))
       .innerJoin(subjects, eq(subjects.id, teacherAssignments.subjectId))
+      .where(eq(classes.establishmentId, est))
       .orderBy(asc(profiles.lastName), asc(classes.name), asc(subjects.name)),
     db
       .select({
@@ -89,19 +96,24 @@ export default async function ManagerAssignmentsPage() {
       .from(classes)
       .leftJoin(classSubjects, eq(classSubjects.classId, classes.id))
       .leftJoin(subjects, eq(subjects.id, classSubjects.subjectId))
+      .where(eq(classes.establishmentId, est))
       .orderBy(asc(classes.name), asc(subjects.name)),
     db
       .select({
         studentId: studentEnrollments.studentId,
         classId: studentEnrollments.classId,
       })
-      .from(studentEnrollments),
+      .from(studentEnrollments)
+      .innerJoin(classes, eq(classes.id, studentEnrollments.classId))
+      .where(eq(classes.establishmentId, est)),
     db
       .select({
         studentId: studentSubjectAccess.studentId,
         subjectId: studentSubjectAccess.subjectId,
       })
-      .from(studentSubjectAccess),
+      .from(studentSubjectAccess)
+      .innerJoin(classes, eq(classes.id, studentSubjectAccess.classId))
+      .where(eq(classes.establishmentId, est)),
   ]);
 
   const classMap = new Map<
