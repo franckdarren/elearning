@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth/permissions";
@@ -122,4 +122,35 @@ export async function toggleUserActive(formData: FormData) {
     .where(eq(profiles.id, id));
 
   revalidatePath("/admin/users");
+}
+
+export async function deleteUser(formData: FormData): Promise<ActionState> {
+  const admin = await requireRole("admin");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Identifiant manquant" };
+
+  // Empêche un admin de se supprimer lui-même
+  if (id === admin.id) return { error: "Vous ne pouvez pas supprimer votre propre compte" };
+
+  const [row] = await db
+    .select({ email: profiles.email, deletedAt: profiles.deletedAt })
+    .from(profiles)
+    .where(eq(profiles.id, id))
+    .limit(1);
+  if (!row) return { error: "Utilisateur introuvable" };
+  if (row.deletedAt) return { error: "Utilisateur déjà supprimé" };
+
+  await db
+    .update(profiles)
+    .set({ deletedAt: new Date(), isActive: false })
+    .where(eq(profiles.id, id));
+
+  await logActivity({
+    userId: admin.id,
+    action: "user.delete",
+    metadata: { targetUserId: id, email: row.email },
+  });
+
+  revalidatePath("/admin/users");
+  return { success: "Utilisateur supprimé" };
 }

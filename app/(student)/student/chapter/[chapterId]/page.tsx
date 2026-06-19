@@ -12,10 +12,9 @@ import {
 } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { requireRole } from "@/lib/auth/permissions";
 import { isWithinResourceWindow } from "@/lib/auth/student-access";
-import { ResourcePlayerDialog } from "@/components/student/resource-player-dialog";
+import { ResourceItem } from "@/components/student/resource-item";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Élève · Chapitre" };
@@ -113,31 +112,20 @@ export default async function StudentChapterPage({
 
   function ResourceCard({ r }: { r: ResRow }) {
     const isNew =
-      r.publishedAt &&
+      !!r.publishedAt &&
       Date.now() - new Date(r.publishedAt).getTime() < SEVEN_DAYS;
     return (
-      <div className="flex items-center gap-3 px-4 py-3 text-sm">
-        <Badge variant="outline" className="w-24 justify-center text-xs">
-          {r.type === "video" ? "Vidéo" : "Document"}
-        </Badge>
-        <div className="flex-1">
-          <div className="font-medium">{r.title}</div>
-          {r.description ? (
-            <div className="text-xs text-zinc-500">{r.description}</div>
-          ) : null}
-        </div>
-        {isNew ? <Badge variant="default">Nouveau</Badge> : null}
-        {watchedSet.has(r.id) ? <Badge variant="secondary">Vu</Badge> : null}
-        <ResourcePlayerDialog
-          resource={{
-            id: r.id,
-            type: r.type,
-            title: r.title,
-            description: r.description,
-            thumbnailUrl: r.thumbnailUrl,
-          }}
-        />
-      </div>
+      <ResourceItem
+        resource={{
+          id: r.id,
+          type: r.type,
+          title: r.title,
+          description: r.description,
+          thumbnailUrl: r.thumbnailUrl,
+        }}
+        isNew={isNew}
+        watched={watchedSet.has(r.id)}
+      />
     );
   }
 

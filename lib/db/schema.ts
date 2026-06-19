@@ -76,6 +76,7 @@ export const profiles = pgTable("profiles", {
   email: text("email").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
-import { and, eq, ilike, or, desc, count } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, desc, count } from "drizzle-orm";
 import {
   Card,
   CardContent,
@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreateUserDialog } from "./create-user-dialog";
 import { EditUserDialog } from "./edit-user-dialog";
 import { ToggleActiveButton } from "./toggle-active-button";
+import { DeleteUserButton } from "./delete-user-button";
 import { UsersFilter } from "./users-filter";
 
 export const metadata = { title: "Admin · Utilisateurs" };
@@ -50,7 +51,7 @@ export default async function UsersPage({
   const roleFilter = sp.role && sp.role !== "all" ? sp.role : null;
   const q = (sp.q ?? "").trim();
 
-  const filters = [];
+  const filters = [isNull(profiles.deletedAt)];
   if (roleFilter) filters.push(eq(profiles.role, roleFilter as never));
   if (q.length > 0) {
     filters.push(
@@ -61,7 +62,7 @@ export default async function UsersPage({
       )!,
     );
   }
-  const where = filters.length > 0 ? and(...filters) : undefined;
+  const where = and(...filters);
 
   const [rows, totalRow] = await Promise.all([
     db
@@ -142,6 +143,10 @@ export default async function UsersPage({
                           }}
                         />
                         <ToggleActiveButton id={u.id} isActive={u.isActive} />
+                        <DeleteUserButton
+                          id={u.id}
+                          name={`${u.firstName} ${u.lastName}`}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
