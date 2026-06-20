@@ -92,6 +92,15 @@ export async function signOut() {
   redirect("/login");
 }
 
+/**
+ * Journalise une déconnexion sans bloquer la redirection. Appelée en
+ * fire-and-forget depuis le client, qui se charge lui-même du signOut Supabase
+ * et de la navigation pour un retour visuel instantané.
+ */
+export async function recordSignOut(userId: string) {
+  await logActivity({ userId, action: "auth.signout" });
+}
+
 export async function requestPasswordReset(
   _prev: ActionState,
   formData: FormData,

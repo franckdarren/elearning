@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart2,
   BookOpen,
@@ -42,7 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { signOut } from "@/lib/auth/actions";
+import { recordSignOut } from "@/lib/auth/actions";
+import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/lib/auth/permissions";
 
 type NavItem = {
@@ -104,7 +105,6 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const navItems = NAV_BY_ROLE[user.role] ?? [];
@@ -213,15 +213,21 @@ export function AppSidebar({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem
+                  asChild
+                  onSelect={(e) => e.preventDefault()}
+                >
                   <button
                     type="button"
                     className="w-full cursor-pointer"
                     disabled={isSigningOut}
                     onClick={() => {
                       setIsSigningOut(true);
-                      startTransition(async () => {
-                        await signOut();
+                      void recordSignOut(user.id);
+                      const supabase = createClient();
+                      void supabase.auth.signOut().then(() => {
+                        router.replace("/login");
+                        router.refresh();
                       });
                     }}
                   >

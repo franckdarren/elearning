@@ -33,7 +33,7 @@ export function AppHeader({
             <div className="text-zinc-500">{ROLE_LABEL[role]}</div>
           </div>
           <NotificationBell userId={userId} />
-          <LogoutButton />
+          <LogoutButton userId={userId} />
         </div>
       </div>
     </header>
