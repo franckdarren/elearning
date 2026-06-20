@@ -225,7 +225,7 @@ export function AppSidebar({
                       setIsSigningOut(true);
                       void recordSignOut(user.id);
                       const supabase = createClient();
-                      void supabase.auth.signOut().then(() => {
+                      void supabase.auth.signOut({ scope: "local" }).then(() => {
                         router.replace("/login");
                         router.refresh();
                       });
