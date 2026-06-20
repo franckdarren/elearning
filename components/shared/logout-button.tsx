@@ -15,7 +15,7 @@ export function LogoutButton({ userId }: { userId?: string }) {
     setPending(true);
     if (userId) void recordSignOut(userId);
     const supabase = createClient();
-    void supabase.auth.signOut().then(() => {
+    void supabase.auth.signOut({ scope: "local" }).then(() => {
       router.replace("/login");
       router.refresh();
     });
