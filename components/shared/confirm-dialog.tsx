@@ -23,8 +23,12 @@ export function ConfirmDialog({
   destructive = false,
   successMessage = "Opération effectuée",
   action,
+  open: openProp,
+  onOpenChange,
 }: {
-  trigger: React.ReactNode;
+  // trigger optionnel : en mode contrôlé (depuis un menu), le dialogue est
+  // rendu hors du menu et piloté via open/onOpenChange.
+  trigger?: React.ReactNode;
   title: string;
   description?: string;
   confirmLabel?: string;
@@ -32,8 +36,16 @@ export function ConfirmDialog({
   destructive?: boolean;
   successMessage?: string;
   action: (formData: FormData) => void | Promise<void>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : openState;
+  const setOpen = (v: boolean) => {
+    onOpenChange?.(v);
+    if (!controlled) setOpenState(v);
+  };
   const [pending, startTransition] = useTransition();
 
   function handleConfirm() {
@@ -50,7 +62,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!pending) setOpen(v); }}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

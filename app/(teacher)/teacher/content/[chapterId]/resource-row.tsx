@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { MoreHorizontal } from "lucide-react";
 import { deleteResource, moveResource } from "@/lib/actions/resources";
@@ -48,6 +48,11 @@ function StatusBadge({ status }: { status: keyof typeof STATUS_LABEL }) {
 
 export function ResourceRow({ r }: ResourceRowProps) {
   const [movePending, startMove] = useTransition();
+  // Les dialogues sont rendus HORS du DropdownMenu : sinon la fermeture du
+  // menu démonte leur contenu et ils ne s'ouvrent jamais.
+  const [activeDialog, setActiveDialog] = useState<
+    null | "preview" | "status" | "delete"
+  >(null);
 
   function handleMove(direction: "up" | "down") {
     const fd = new FormData();
@@ -101,36 +106,49 @@ export function ResourceRow({ r }: ResourceRowProps) {
               ↓ Descendre
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <ResourcePreviewDialog resourceId={r.id} asMenuItem />
-            <StatusDialog
-              resource={{
-                id: r.id,
-                title: r.title,
-                status: r.status,
-                publishedAt: r.publishedAt,
-                unpublishAt: r.unpublishAt,
-              }}
-              asMenuItem
-            />
+            <DropdownMenuItem onSelect={() => setActiveDialog("preview")}>
+              Aperçu
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setActiveDialog("status")}>
+              Publication
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <ConfirmDialog
-              trigger={
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  Supprimer
-                </DropdownMenuItem>
-              }
-              title={`Supprimer ${r.title} ?`}
-              description="Le fichier sera supprimé du stockage et la ressource retirée du chapitre."
-              confirmLabel="Supprimer"
-              destructive
-              action={handleDelete}
-            />
+            <DropdownMenuItem
+              onSelect={() => setActiveDialog("delete")}
+              className="text-red-600 focus:text-red-600"
+            >
+              Supprimer
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Dialogues rendus hors du menu pour survivre à sa fermeture. */}
+      <ResourcePreviewDialog
+        resourceId={r.id}
+        open={activeDialog === "preview"}
+        onOpenChange={(o) => setActiveDialog(o ? "preview" : null)}
+      />
+      <StatusDialog
+        resource={{
+          id: r.id,
+          title: r.title,
+          status: r.status,
+          publishedAt: r.publishedAt,
+          unpublishAt: r.unpublishAt,
+        }}
+        open={activeDialog === "status"}
+        onOpenChange={(o) => setActiveDialog(o ? "status" : null)}
+      />
+      <ConfirmDialog
+        open={activeDialog === "delete"}
+        onOpenChange={(o) => setActiveDialog(o ? "delete" : null)}
+        title={`Supprimer ${r.title} ?`}
+        description="Le fichier sera supprimé du stockage et la ressource retirée du chapitre."
+        confirmLabel="Supprimer"
+        destructive
+        action={handleDelete}
+      />
     </div>
   );
 }

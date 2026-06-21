@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -37,7 +36,8 @@ function toLocalInput(d: Date | string | null) {
 
 export function StatusDialog({
   resource,
-  asMenuItem,
+  open: openProp,
+  onOpenChange,
 }: {
   resource: {
     id: string;
@@ -46,9 +46,18 @@ export function StatusDialog({
     publishedAt: Date | string | null;
     unpublishAt: Date | string | null;
   };
-  asMenuItem?: boolean;
+  // Mode contrôlé (depuis un menu) : on fournit open + onOpenChange.
+  // Sinon le composant gère son propre bouton + état (page scheduling).
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : openState;
+  const setOpen = (v: boolean) => {
+    onOpenChange?.(v);
+    if (!controlled) setOpenState(v);
+  };
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     updateResourceStatus,
     null,
@@ -57,17 +66,14 @@ export function StatusDialog({
   useEffect(() => {
     if (state?.success) {
       toast.success(state.success);
-      setOpen(false);
+      onOpenChange?.(false);
+      setOpenState(false);
     }
-  }, [state]);
+  }, [state, onOpenChange]);
 
   return (
     <>
-      {asMenuItem ? (
-        <DropdownMenuItem onSelect={() => setOpen(true)}>
-          Publication
-        </DropdownMenuItem>
-      ) : (
+      {!controlled && (
         <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
           Publication
         </Button>
