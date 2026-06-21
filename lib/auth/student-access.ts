@@ -13,7 +13,9 @@ import {
 export function isWithinResourceWindow() {
   return and(
     eq(resources.status, "published"),
-    lte(resources.publishedAt, sql`now()`),
+    // published_at NULL = publié immédiatement (le statut "published" fait foi) ;
+    // sinon la date programmée doit être passée.
+    or(isNull(resources.publishedAt), lte(resources.publishedAt, sql`now()`)),
     or(isNull(resources.unpublishAt), gt(resources.unpublishAt, sql`now()`)),
   );
 }
