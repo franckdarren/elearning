@@ -8,7 +8,7 @@ import {
   resources,
   sequences,
 } from "@/lib/db/schema";
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, countDistinct, eq } from "drizzle-orm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,10 +67,9 @@ export default async function TeacherContentPage({
       id: chapters.id,
       title: chapters.title,
       position: chapters.position,
-      resourceCount: count(resources.id),
-      sequenceCount:
-        // count distinct sequences via raw sql workaround
-        count(sequences.id),
+      // countDistinct évite le produit cartésien des deux LEFT JOIN
+      resourceCount: countDistinct(resources.id),
+      sequenceCount: countDistinct(sequences.id),
     })
     .from(chapters)
     .leftJoin(resources, eq(resources.chapterId, chapters.id))
