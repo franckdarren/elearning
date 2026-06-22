@@ -62,6 +62,7 @@ export async function upsertAcademicYear(
   });
 
   revalidatePath("/admin/settings");
+  revalidatePath("/manager/settings");
   return { success: id ? "Année mise à jour" : "Année créée" };
 }
 

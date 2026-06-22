@@ -21,9 +21,10 @@ type Props = {
     endDate: string | null;
     isCurrent: boolean | null;
   };
+  canDelete?: boolean;
 };
 
-export function YearRowActions({ year }: Props) {
+export function YearRowActions({ year, canDelete = false }: Props) {
   async function handleDelete(formData: FormData) {
     formData.set("id", year.id);
     await deleteAcademicYear(formData);
@@ -46,23 +47,27 @@ export function YearRowActions({ year }: Props) {
               </DropdownMenuItem>
             }
           />
-          <DropdownMenuSeparator />
-          <ConfirmDialog
-            trigger={
-              <DropdownMenuItem
-                onSelect={(e) => e.preventDefault()}
-                className="text-red-600 focus:text-red-600"
-              >
-                Supprimer
-              </DropdownMenuItem>
-            }
-            title={`Supprimer ${year.label} ?`}
-            description="Les classes rattachées à cette année perdront leur rattachement."
-            confirmLabel="Supprimer"
-            destructive
-            successMessage={`Année ${year.label} supprimée`}
-            action={handleDelete}
-          />
+          {canDelete ? (
+            <>
+              <DropdownMenuSeparator />
+              <ConfirmDialog
+                trigger={
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    Supprimer
+                  </DropdownMenuItem>
+                }
+                title={`Supprimer ${year.label} ?`}
+                description="Les classes rattachées à cette année perdront leur rattachement."
+                confirmLabel="Supprimer"
+                destructive
+                successMessage={`Année ${year.label} supprimée`}
+                action={handleDelete}
+              />
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

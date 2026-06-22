@@ -72,6 +72,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { title: "QCM", url: "/manager/quizzes", icon: ClipboardList },
     { title: "Résultats", url: "/manager/results", icon: BarChart2 },
     { title: "Programmation", url: "/manager/scheduling", icon: Calendar },
+    { title: "Paramètres", url: "/manager/settings", icon: Settings },
   ],
   teacher: [
     { title: "Tableau de bord", url: "/teacher/dashboard", icon: LayoutDashboard },

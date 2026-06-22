@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { academicYears } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
+import { requireRole } from "@/lib/auth/permissions";
 import {
   Card,
   CardContent,
@@ -20,10 +21,12 @@ import { Button } from "@/components/ui/button";
 import { YearDialog } from "@/components/shared/year-dialog";
 import { YearRowActions } from "@/components/shared/year-row-actions";
 
-export const metadata = { title: "Admin · Paramètres" };
+export const metadata = { title: "Gestionnaire · Paramètres" };
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+export default async function ManagerSettingsPage() {
+  await requireRole(["admin", "manager"]);
+
   const years = await db
     .select()
     .from(academicYears)
@@ -33,9 +36,7 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Paramètres</h1>
-        <p className="text-sm text-zinc-500">
-          Années scolaires et paramètres globaux.
-        </p>
+        <p className="text-sm text-zinc-500">Années scolaires.</p>
       </div>
 
       <Card>
@@ -73,7 +74,7 @@ export default async function SettingsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <YearRowActions year={y} canDelete />
+                      <YearRowActions year={y} />
                     </TableCell>
                   </TableRow>
                 ))}
