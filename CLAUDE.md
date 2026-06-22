@@ -117,7 +117,7 @@ Définis dans l'enum Drizzle/Postgres `user_role` et stockés dans la table `pro
 | Rôle | Accès |
 |---|---|
 | `admin` | Tout |
-| `manager` | Classes, matières, affectations, contenus de son périmètre |
+| `manager` | Responsable de SON établissement : CRUD enseignants/élèves de l'établissement, classes, matières, affectations, **toutes** les fonctionnalités enseignant (chapitres, ressources, QCM) sur tout l'établissement, résultats, programmation |
 | `teacher` | Contenus de ses (classe+matière) assignées uniquement |
 | `student` | Ses matières autorisées + contenus publiés uniquement |
 

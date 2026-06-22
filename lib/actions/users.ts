@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
-import { eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
-import { requireRole } from "@/lib/auth/permissions";
+import { requireRole, type CurrentUser } from "@/lib/auth/permissions";
 import {
   inviteUserSchema,
   updateUserSchema,
@@ -22,11 +22,36 @@ function adminClient() {
   );
 }
 
+/**
+ * Vérifie qu'un gestionnaire peut agir sur un profil cible : celui-ci doit
+ * appartenir à SON établissement et être un enseignant ou un élève.
+ * Renvoie un ActionState d'erreur si interdit, sinon null.
+ */
+async function assertManagerOwnsProfile(
+  actor: CurrentUser,
+  targetId: string,
+): Promise<ActionState> {
+  if (!actor.establishmentId) return { error: "Aucun établissement attribué" };
+  const [target] = await db
+    .select({ role: profiles.role, establishmentId: profiles.establishmentId })
+    .from(profiles)
+    .where(eq(profiles.id, targetId))
+    .limit(1);
+  if (!target) return { error: "Utilisateur introuvable" };
+  if (
+    target.establishmentId !== actor.establishmentId ||
+    (target.role !== "teacher" && target.role !== "student")
+  ) {
+    return { error: "Action non autorisée" };
+  }
+  return null;
+}
+
 export async function createUser(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const admin = await requireRole("admin");
+  const actor = await requireRole(["admin", "manager"]);
 
   const parsed = inviteUserSchema.safeParse({
     email: formData.get("email"),
@@ -40,9 +65,24 @@ export async function createUser(
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
   }
 
+  // Un gestionnaire ne crée que des enseignants/élèves de SON établissement.
+  if (actor.role === "manager") {
+    if (parsed.data.role !== "teacher" && parsed.data.role !== "student") {
+      return { error: "Rôle non autorisé" };
+    }
+    if (!actor.establishmentId) {
+      return { error: "Aucun établissement attribué" };
+    }
+  }
+
   // L'admin est global ; les autres rôles sont rattachés à un établissement.
+  // Pour un manager, l'établissement est imposé (jamais celui du formulaire).
   const establishmentId =
-    parsed.data.role === "admin" ? null : parsed.data.establishmentId ?? null;
+    parsed.data.role === "admin"
+      ? null
+      : actor.role === "manager"
+        ? actor.establishmentId
+        : parsed.data.establishmentId ?? null;
   if (parsed.data.role !== "admin" && !establishmentId) {
     return { error: "Établissement requis pour ce rôle" };
   }
@@ -75,11 +115,12 @@ export async function createUser(
     .where(eq(profiles.id, data.user.id));
 
   await logActivity({
-    userId: admin.id,
+    userId: actor.id,
     action: "user.create",
     metadata: { email: parsed.data.email, role: parsed.data.role },
   });
   revalidatePath("/admin/users");
+  revalidatePath("/manager/users");
   return { success: "Utilisateur créé" };
 }
 
@@ -87,7 +128,7 @@ export async function updateUser(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireRole("admin");
+  const actor = await requireRole(["admin", "manager"]);
 
   const parsed = updateUserSchema.safeParse({
     id: formData.get("id"),
@@ -101,9 +142,23 @@ export async function updateUser(
     return { error: parsed.error.issues[0]?.message ?? "Champs invalides" };
   }
 
+  // Un gestionnaire ne gère que les enseignants/élèves de SON établissement.
+  if (actor.role === "manager") {
+    if (parsed.data.role !== "teacher" && parsed.data.role !== "student") {
+      return { error: "Rôle non autorisé" };
+    }
+    const guard = await assertManagerOwnsProfile(actor, parsed.data.id);
+    if (guard) return guard;
+  }
+
   // L'admin reste global ; les autres rôles doivent avoir un établissement.
+  // Pour un manager, l'établissement reste celui qu'il gère.
   const establishmentId =
-    parsed.data.role === "admin" ? null : parsed.data.establishmentId ?? null;
+    parsed.data.role === "admin"
+      ? null
+      : actor.role === "manager"
+        ? actor.establishmentId
+        : parsed.data.establishmentId ?? null;
   if (parsed.data.role !== "admin" && !establishmentId) {
     return { error: "Établissement requis pour ce rôle" };
   }
@@ -120,13 +175,19 @@ export async function updateUser(
     .where(eq(profiles.id, parsed.data.id));
 
   revalidatePath("/admin/users");
+  revalidatePath("/manager/users");
   return { success: "Utilisateur mis à jour" };
 }
 
 export async function toggleUserActive(formData: FormData) {
-  await requireRole("admin");
+  const actor = await requireRole(["admin", "manager"]);
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+
+  if (actor.role === "manager") {
+    const guard = await assertManagerOwnsProfile(actor, id);
+    if (guard) return;
+  }
 
   const [row] = await db
     .select({ isActive: profiles.isActive })
@@ -141,15 +202,21 @@ export async function toggleUserActive(formData: FormData) {
     .where(eq(profiles.id, id));
 
   revalidatePath("/admin/users");
+  revalidatePath("/manager/users");
 }
 
 export async function deleteUser(formData: FormData): Promise<ActionState> {
-  const admin = await requireRole("admin");
+  const actor = await requireRole(["admin", "manager"]);
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Identifiant manquant" };
 
-  // Empêche un admin de se supprimer lui-même
-  if (id === admin.id) return { error: "Vous ne pouvez pas supprimer votre propre compte" };
+  // Empêche de se supprimer soi-même
+  if (id === actor.id) return { error: "Vous ne pouvez pas supprimer votre propre compte" };
+
+  if (actor.role === "manager") {
+    const guard = await assertManagerOwnsProfile(actor, id);
+    if (guard) return guard;
+  }
 
   const [row] = await db
     .select({ email: profiles.email, deletedAt: profiles.deletedAt })
@@ -165,11 +232,12 @@ export async function deleteUser(formData: FormData): Promise<ActionState> {
     .where(eq(profiles.id, id));
 
   await logActivity({
-    userId: admin.id,
+    userId: actor.id,
     action: "user.delete",
     metadata: { targetUserId: id, email: row.email },
   });
 
   revalidatePath("/admin/users");
+  revalidatePath("/manager/users");
   return { success: "Utilisateur supprimé" };
 }

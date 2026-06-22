@@ -40,9 +40,15 @@ type Props = {
     classId: string;
     subjectId: string;
   }[];
+  basePath?: string;
 };
 
-export function QuizRowActions({ quiz, assignments, chapters }: Props) {
+export function QuizRowActions({
+  quiz,
+  assignments,
+  chapters,
+  basePath = "/teacher",
+}: Props) {
   async function handleDelete(formData: FormData) {
     formData.set("id", quiz.id);
     await deleteQuiz(formData);
@@ -58,7 +64,7 @@ export function QuizRowActions({ quiz, assignments, chapters }: Props) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link href={`/teacher/quizzes/${quiz.id}/edit`}>Ouvrir</Link>
+            <Link href={`${basePath}/quizzes/${quiz.id}/edit`}>Ouvrir</Link>
           </DropdownMenuItem>
           <QuizDialog
             assignments={assignments}

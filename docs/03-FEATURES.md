@@ -19,9 +19,12 @@
 - Paramètres & sécurité.
 
 ## 3. Gestionnaire
+**Responsable de SON établissement** (un gestionnaire ↔ un établissement). Périmètre = tout l'établissement.
+- CRUD **utilisateurs** : créer/modifier/désactiver/supprimer **enseignants et élèves** de son établissement (jamais admin ni gestionnaire ; l'établissement est imposé automatiquement).
 - CRUD classes, matières.
 - Gestion des affectations (enseignants, élèves).
-- Contrôle des contenus pédagogiques (lecture/validation).
+- **Fonctionnalités pédagogiques complètes** (comme un enseignant, mais sur toutes les classes+matières de l'établissement) : chapitres, séquences, vidéos, documents, QCM.
+- Consultation des **résultats** des élèves de l'établissement.
 - Programmation des publications.
 - Statistiques de son périmètre.
 

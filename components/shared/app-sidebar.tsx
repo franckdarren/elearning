@@ -64,9 +64,13 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   ],
   manager: [
     { title: "Tableau de bord", url: "/manager/dashboard", icon: LayoutDashboard },
+    { title: "Utilisateurs", url: "/manager/users", icon: Users },
     { title: "Classes", url: "/manager/classes", icon: GraduationCap },
     { title: "Matières", url: "/manager/subjects", icon: BookOpen },
     { title: "Affectations", url: "/manager/assignments", icon: UserCheck },
+    { title: "Contenus", url: "/manager/content", icon: FolderOpen },
+    { title: "QCM", url: "/manager/quizzes", icon: ClipboardList },
+    { title: "Résultats", url: "/manager/results", icon: BarChart2 },
     { title: "Programmation", url: "/manager/scheduling", icon: Calendar },
   ],
   teacher: [
