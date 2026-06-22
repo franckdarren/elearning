@@ -7,6 +7,7 @@ import { signIn, type ActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/shared/password-input";
 
 export function LoginForm() {
   const router = useRouter();
@@ -48,10 +49,9 @@ export function LoginForm() {
             Oublié ?
           </Link>
         </div>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
         />

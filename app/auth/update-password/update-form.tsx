@@ -4,8 +4,8 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updatePassword, type ActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/shared/password-input";
 
 export function UpdatePasswordForm() {
   const router = useRouter();
@@ -22,10 +22,9 @@ export function UpdatePasswordForm() {
     <form action={formAction} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="password">Nouveau mot de passe</Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           required
         />
@@ -36,10 +35,9 @@ export function UpdatePasswordForm() {
 
       <div className="space-y-2">
         <Label htmlFor="confirm">Confirmation</Label>
-        <Input
+        <PasswordInput
           id="confirm"
           name="confirm"
-          type="password"
           autoComplete="new-password"
           required
         />
